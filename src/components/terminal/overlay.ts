@@ -3,11 +3,11 @@
 import { Terminal } from 'xterm';
 
 interface IOverlayAddonTerminal extends Terminal {
-    __overlayNode?: HTMLElement;
-    __overlayTimeout?: number;
+    __overlayNode: HTMLElement | null;
+    __overlayTimeout: number | null;
 }
 
-export function showOverlay(term: Terminal, msg: string, timeout: number): void {
+export function showOverlay(term: Terminal, msg: string, timeout?: number): void {
     const addonTerminal = <IOverlayAddonTerminal> term;
     if (!addonTerminal.__overlayNode) {
         if (!term.element) {
@@ -30,6 +30,7 @@ export function showOverlay(term: Terminal, msg: string, timeout: number): void 
             e.stopPropagation();
         }, true);
     }
+
     addonTerminal.__overlayNode.style.color = '#101010';
     addonTerminal.__overlayNode.style.backgroundColor = '#f0f0f0';
 
