@@ -148,4 +148,12 @@ dmypy.json
 # PyCharm
 .idea/
 
+# Config file (with wi-fi password)
 wi_se_conf.py
+
+# Firmware build dependencies and outputs
+micropython/
+esp-idf/
+build-esp32-venv/
+xtensa-esp32-elf/
+
