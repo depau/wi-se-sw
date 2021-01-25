@@ -13,12 +13,6 @@ board_type = "wi-se-rewirable-v0.1"
 # led_rx = const(7)
 # led_tx = const(8)
 
-# Uncomment and set to True if your LEDs are active-low
-# led_wifi_invert = False
-# led_status_invert = False
-# led_rx_invert = False
-# led_tx_invert = False
-
 ## Wi-Fi configuration
 
 # Wi-Fi mode: sta (client) or ap (access-point)

@@ -3,10 +3,10 @@ from machine import Pin, Signal
 from . import conf as cfg
 
 if cfg.board_type == "custom":
-    wifi = Signal(Pin(cfg.led_wifi, Pin.OUT), invert=getattr(cfg, "led_wifi_invert", False))
-    status = Signal(Pin(cfg.led_status, Pin.OUT), invert=getattr(cfg, "led_status_invert", False))
-    tx = Signal(Pin(cfg.led_tx, Pin.OUT), invert=getattr(cfg, "led_tx_invert", False))
-    rx = Signal(Pin(cfg.led_rx, Pin.OUT), invert=getattr(cfg, "led_rx_invert", False))
+    wifi = Pin(cfg.led_wifi, Pin.OUT)
+    status = Pin(cfg.led_status, Pin.OUT)
+    tx = Pin(cfg.led_tx, Pin.OUT)
+    rx = Pin(cfg.led_rx, Pin.OUT)
 
 elif cfg.board_type in ("wi-se-rpi-v0.1", "wi-se-opi4-v0.1"):
     wifi = Pin(14, Pin.OUT)
