@@ -3,13 +3,10 @@ Websockets protocol
 
 Adapted from https://github.com/danni/uwebsockets/blob/esp8266/uwebsockets/protocol.py
 """
-import logging
 import random
 import struct
 
 import uasyncio as asyncio
-
-LOGGER = logging.getLogger(__name__)
 
 # Opcodes
 OP_CONT = const(0x0)
@@ -95,7 +92,7 @@ class WebSocket:
         except MemoryError:
             # We can't receive this many bytes, close the socket
             if __debug__:
-                LOGGER.debug("Frame of length %s too big. Closing", length)
+                print("Frame of length %s too big. Closing", length)
             await self.close(code=CLOSE_TOO_BIG)
             return True, OP_CLOSE, None
 
@@ -168,7 +165,7 @@ class WebSocket:
             except NoDataException:
                 return ''
             except ValueError:
-                LOGGER.debug("Failed to read frame. Socket dead.")
+                print("Failed to read frame. Socket dead.")
                 await self._close()
                 raise ConnectionClosed()
 
@@ -188,7 +185,7 @@ class WebSocket:
             elif opcode == OP_PING:
                 # We need to send a pong frame
                 if __debug__:
-                    LOGGER.debug("Sending PONG")
+                    print("Sending PONG")
                 await self.write_frame(OP_PONG, data)
                 # And then wait to receive
                 continue
@@ -225,7 +222,7 @@ class WebSocket:
 
     async def _close(self):
         if __debug__:
-            LOGGER.debug("Connection closed")
+            print("Connection closed")
         self.open = False
         self.reader.close()
         self.writer.close()
