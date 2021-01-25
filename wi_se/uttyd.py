@@ -42,8 +42,8 @@ class TTY:
     @property
     def window_title(self):
         parity = self.tty_conf['parity']
-        return "UART{id} {baud} {bits}{parity}{stop}".format(
-            id=conf.uart_id, baud=self.tty_conf['baudrate'], bits=self.tty_conf['bits'],
+        return "{hostname} UART{id} {baud} {bits}{parity}{stop}".format(
+            id=conf.uart_id, baud=self.tty_conf['baudrate'], bits=self.tty_conf['bits'], hostname=conf.hostname,
             parity=parity is None and 'N' or parity is 1 and 'O' or parity is 0 and 'E', stop=self.tty_conf['stop']
         ).encode()
 
