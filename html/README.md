@@ -1,3 +1,6 @@
+This code has been adapted from `ttyd`:
+https://github.com/tsl0922/ttyd/tree/master/html
+
 ## Prerequisites
 
 install [Yarn](https://yarnpkg.com), and run: `yarn install`.
@@ -9,4 +12,4 @@ install [Yarn](https://yarnpkg.com), and run: `yarn install`.
 
 ## Publish
 
-Run `yarn run build`, this will compile the inlined html to `../src/html.h`.
+Run `yarn run build`, this will compile the inlined html to `../wi_se/html.py`.
