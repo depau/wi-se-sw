@@ -9,7 +9,7 @@ try:
 except ImportError:
     from ubinascii import b2a_base64
 
-from . import conf
+from . import conf, html
 from . import ufirewall
 from . import uhttp
 from . import uwebsocket
@@ -53,12 +53,8 @@ class Server:
             if req.path == "/token":
                 await self.handle_http_token(req, writer)
 
-            elif req.path.startswith("/static/"):
-                await self.handle_http_static(req, writer)
-
             elif req.path == "/" or req.path == "/index.html":
-                req.path = "/static/index.html"
-                await self.handle_http_static(req, writer)
+                await self.handle_http_index(req, writer)
 
             else:
                 await uhttp.HTTPResponse.not_found(writer)
@@ -93,8 +89,17 @@ class Server:
         ).write_into(writer)
         return True
 
-    async def handle_http_static(self, req: uhttp.HTTPRequest, writer: asyncio.StreamWriter):
-        pass
+    @staticmethod
+    async def handle_http_index(req: uhttp.HTTPRequest, writer: asyncio.StreamWriter):
+        if 'gzip' not in req.headers.get('accept-encoding', 'gzip') or \
+                'text/html' not in req.headers.get('accept', 'text/html'):
+            await uhttp.HTTPResponse.not_acceptable(writer)
+            return
+
+        await uhttp.HTTPResponse(200, body=html.index_gz, headers={
+            'Content-Type': 'text/html;charset=utf-8',
+            'Content-Encoding': 'gzip'
+        }).write_into(writer)
 
     async def handle_http_stty(self, req: uhttp.HTTPRequest, reader: asyncio.StreamReader,
                                writer: asyncio.StreamWriter):
@@ -104,7 +109,9 @@ class Server:
                 j = json.loads(body)
                 await self.tty.stty(**j)
             except Exception as exc:
-                await uhttp.HTTPResponse(400, body=str(exc), headers={'Content-Type': 'text/plain'}).write_into(writer)
+                await uhttp.HTTPResponse(400, body=str(exc), headers={
+                    'Content-Type': 'text/plain'
+                }).write_into(writer)
                 return
 
         await uhttp.HTTPResponse(
@@ -124,7 +131,6 @@ class Server:
         else:
             token = ""
 
-        await uhttp \
-            .HTTPResponse(body='{"token": "' + token + '"}',
-                          headers={'Content-Type': 'application/json;charset=utf-8'}) \
-            .write_into(writer)
+        await uhttp.HTTPResponse(body='{"token": "' + token + '"}', headers={
+            'Content-Type': 'application/json;charset=utf-8'
+        }).write_into(writer)

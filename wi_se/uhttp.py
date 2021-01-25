@@ -8,6 +8,7 @@ _status_messages = {
     400: "Bad Request",
     401: "Unauthorized",
     404: "Not Found",
+    406: "Not Acceptable",
     500: "Internal Server Error",
 }
 
@@ -69,6 +70,8 @@ class HTTPResponse:
             self.headers['Server'] = \
                 'Wi-Se Snek v' + wi_se.VERSION + \
                 ' {}/v{}'.format(sys.implementation.name, '.'.join(sys.implementation.version))
+        if 'Connection' not in self.headers and 'connection' not in self.headers:
+            self.headers['Connection'] = "close"
 
     async def write_into(self, writer):
         writer.write(
@@ -95,3 +98,7 @@ class HTTPResponse:
     @classmethod
     async def unauthorized(cls, writer):
         await cls(401).write_into(writer)
+
+    @classmethod
+    async def not_acceptable(cls, writer):
+        await cls(406).write_into(writer)
