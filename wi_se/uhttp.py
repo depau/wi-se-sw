@@ -82,10 +82,13 @@ class HTTPResponse:
             writer.write("{}: {}\r\n".format(key, val))
             await writer.drain()
         writer.write('\r\n')
+        await writer.drain()
 
         if self.body:
-            writer.write(self.body)
-        await writer.drain()
+            chunk_size = 256
+            for i in range(0, len(self.body), chunk_size):
+                writer.write(self.body[i:i + chunk_size] + b'\n')
+                await writer.drain()
 
     @classmethod
     async def not_found(cls, writer):
