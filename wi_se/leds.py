@@ -1,4 +1,4 @@
-from machine import Pin, Signal
+from machine import Pin
 
 from . import conf as cfg
 
@@ -19,6 +19,12 @@ elif cfg.board_type == "wi-se-rewirable-v0.1":
     status = Pin(5, Pin.OUT)
     tx = Pin(3, Pin.OUT)
     rx = Pin(4, Pin.OUT)
+
+elif cfg.board_type == "stub":
+    wifi = Pin("Wi-Fi")
+    status = Pin("Status")
+    tx = Pin("TXD")
+    rx = Pin("RXD")
 
 else:
     raise RuntimeError("Unknown board type: '{}'".format(cfg.board_type))
