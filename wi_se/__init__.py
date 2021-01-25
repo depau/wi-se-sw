@@ -1,17 +1,27 @@
-VERSION = '0.1'
-
-import asyncio
-
 import esp
+import uasyncio as asyncio
+import uos as os
 
-from . import network as net
+from . import conf
+from . import network
+from .server import Server
+
+VERSION = '0.1'
 
 
 def main():
-    # Disable debug messages
-    esp.osdebug(None)
+    if conf.unbind_repl:
+        # Disable debug messages
+        esp.osdebug(None)
+        # Unbind REPL
+        os.dupterm(None, 1)
 
     loop = asyncio.get_event_loop()
 
-    wlan = net.up()
-    loop.create_task(net.ensure_up())
+    wlan = network.up()
+    loop.create_task(network.ensure_up())
+
+    server = Server()
+    loop.create_task(server.serve())
+
+    loop.run_until_complete()
