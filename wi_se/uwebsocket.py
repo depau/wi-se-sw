@@ -224,7 +224,5 @@ class WebSocket:
         if __debug__:
             print("Connection closed")
         self.open = False
-        self.reader.close()
         self.writer.close()
-        await self.reader.wait_closed()
         await self.writer.wait_closed()

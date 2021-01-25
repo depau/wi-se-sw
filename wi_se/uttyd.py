@@ -20,7 +20,7 @@ CMD_SET_PREFERENCES = b'2'
 
 
 class TTY:
-    def __init__(self, token: str):
+    def __init__(self, token: bytes):
         self.token = token
         self.tty_conf = {
             'baudrate': conf.uart_baud,
@@ -42,7 +42,7 @@ class TTY:
     @property
     def window_title(self):
         parity = self.tty_conf['parity']
-        return "UART{id} {baud] {bits}{parity}{stop}".format(
+        return "UART{id} {baud} {bits}{parity}{stop}".format(
             id=conf.uart_id, baud=self.tty_conf['baudrate'], bits=self.tty_conf['bits'],
             parity=parity is None and 'N' or parity is 1 and 'O' or parity is 0 and 'E', stop=self.tty_conf['stop']
         ).encode()
@@ -57,7 +57,7 @@ class TTY:
     async def broadcast(self, payload: bytes):
         for ws in self.websockets:
             if ws.open:
-                ws.send(payload)
+                await ws.send(payload)
 
     async def send_initial_message(self, ws: uwebsocket.WebSocket):
         await ws.send(CMD_SET_WINDOW_TITLE + self.window_title)
@@ -92,7 +92,7 @@ class TTY:
                     await ws.close(uwebsocket.CLOSE_BAD_DATA)
                     break
 
-                if j.get("AuthToken", None) != self.token:
+                if j.get("AuthToken", None) != self.token.decode():
                     await ws.close(uwebsocket.CLOSE_POLICY_VIOLATION)
                     break
                 else:
@@ -102,6 +102,8 @@ class TTY:
             assert authenticated
 
             if payload.startswith(CMD_INPUT):
+                if type(payload) == str:
+                    payload = payload.encode()
                 self.uart_writer.write(payload[1:])
                 await self.uart_writer.drain()
 

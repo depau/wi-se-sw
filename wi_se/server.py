@@ -1,19 +1,15 @@
 import hashlib
 import json
 import os
+from binascii import b2a_base64
 
 import uasyncio as asyncio
-
-try:
-    from binascii import b2a_base64
-except ImportError:
-    from ubinascii import b2a_base64
 
 from . import conf, html
 from . import ufirewall
 from . import uhttp
-from . import uwebsocket
 from . import uttyd
+from . import uwebsocket
 
 
 async def close_streams(*streams):
@@ -25,7 +21,11 @@ async def close_streams(*streams):
 
 class Server:
     def __init__(self):
-        self.token = b2a_base64(os.urandom(10)).decode().strip()
+        if getattr(conf, 'http_basic_auth'):
+            self.token = b2a_base64(os.urandom(10))[:-1]
+        else:
+            self.token = b''
+
         self.tty = uttyd.TTY(self.token)
         self.websockets = []
 
@@ -36,19 +36,25 @@ class Server:
         ip, port = reader.get_extra_info('peername')
 
         if not ufirewall.is_allowed(ip):
-            await close_streams(reader, writer)
+            print("IP not allowed: {}".format(ip))
+            await close_streams(writer)
             return
 
         req = await uhttp.HTTPRequest.parse(reader)
 
+        if getattr(conf, 'http_basic_auth'):
+            if not req.check_basic_auth(conf.http_basic_auth):
+                await uhttp.HTTPResponse.unauthorized(writer, realm="Wi-Se")
+                await close_streams(writer)
+                return
+
         if req.method in ('GET', 'POST') and req.path == "/stty":
             await self.handle_http_stty(req, reader, writer)
-        if req.method == "GET":
-            await reader.read(1000)  # Discard any body if present
-
+        elif req.method == "GET":
             if req.path == "/ws":
                 if await self.websocket_handshake(req, writer):
                     await self.handle_uart_socket(reader, writer)
+                    return  # Do not close stream!
 
             if req.path == "/token":
                 await self.handle_http_token(req, writer)
@@ -65,7 +71,7 @@ class Server:
         else:
             await uhttp.HTTPResponse.bad_request(writer)
 
-        await close_streams(reader, writer)
+        await close_streams(writer)
 
     @staticmethod
     async def websocket_handshake(req: uhttp.HTTPRequest, writer: asyncio.StreamWriter) -> bool:
@@ -76,9 +82,12 @@ class Server:
             await uhttp.HTTPResponse.bad_request(writer)
             return False
         ws_accept = b2a_base64(
-            hashlib.sha1(req.headers['sec-websocket-key'] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").digest()).decode()
+            hashlib.sha1(
+                (req.headers['sec-websocket-key'].encode()) + b"258EAFA5-E914-47DA-95CA-C5AB0DC85B11")
+                .digest()) \
+            .decode().strip()
         await uhttp.HTTPResponse(
-            status=191,
+            status=101,
             headers={
                 'Connection': 'upgrade',
                 'Upgrade': 'websocket',
@@ -91,8 +100,7 @@ class Server:
 
     @staticmethod
     async def handle_http_index(req: uhttp.HTTPRequest, writer: asyncio.StreamWriter):
-        if 'gzip' not in req.headers.get('accept-encoding', 'gzip') or \
-                'text/html' not in req.headers.get('accept', 'text/html'):
+        if 'gzip' not in req.headers.get('accept-encoding', 'gzip'):
             await uhttp.HTTPResponse.not_acceptable(writer)
             return
 
@@ -123,14 +131,6 @@ class Server:
         self.tty.add_websocket(websocket)
 
     async def handle_http_token(self, req: uhttp.HTTPRequest, writer: asyncio.StreamWriter):
-        if getattr(conf, 'http_basic_auth'):
-            if 'authorization' not in req.headers or req.headers['authorization'] != conf.http_basic_auth:
-                await uhttp.HTTPResponse.unauthorized(writer)
-                return
-            token = self.token
-        else:
-            token = ""
-
-        await uhttp.HTTPResponse(body='{"token": "' + token + '"}', headers={
+        await uhttp.HTTPResponse(body=b'{"token": "' + self.token + b'"}', headers={
             'Content-Type': 'application/json;charset=utf-8'
         }).write_into(writer)
