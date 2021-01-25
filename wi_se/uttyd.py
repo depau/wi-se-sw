@@ -50,7 +50,7 @@ class TTY:
     async def u2w_loop(self):
         self.u2w_loop_alive = True
         while len(self.websockets) > 0:
-            data = await self.uart_reader.read(300)
+            data = await self.uart_reader.read(8096)
             await self.broadcast(CMD_OUTPUT + data)
         self.u2w_loop_alive = False
 
