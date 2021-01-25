@@ -57,7 +57,10 @@ class TTY:
     async def broadcast(self, payload: bytes):
         for ws in self.websockets:
             if ws.open:
-                await ws.send(payload)
+                try:
+                    await ws.send(payload)
+                except uwebsocket.ConnectionClosed:
+                    self.websockets.remove(ws)
 
     async def send_initial_message(self, ws: uwebsocket.WebSocket):
         await ws.send(CMD_SET_WINDOW_TITLE + self.window_title)

@@ -164,7 +164,7 @@ class WebSocket:
                 fin, opcode, data = await self.read_frame()
             except NoDataException:
                 return ''
-            except ValueError:
+            except (ValueError, OSError):
                 print("Failed to read frame. Socket dead.")
                 await self._close()
                 raise ConnectionClosed()
@@ -208,7 +208,12 @@ class WebSocket:
         else:
             raise TypeError()
 
-        await self.write_frame(opcode, buf)
+        try:
+            await self.write_frame(opcode, buf)
+        except OSError:
+            print("Failed to write frame. Socket dead.")
+            await self._close()
+            raise ConnectionClosed()
 
     async def close(self, code=CLOSE_OK, reason=''):
         """Close the websocket."""
