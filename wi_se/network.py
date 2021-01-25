@@ -1,14 +1,13 @@
-import uasyncio as asyncio
 import time
-from typing import Optional
 
+import uasyncio as asyncio
 from machine import PWM
 
 from . import conf as cfg
 from . import leds
 from .constants import *
 
-wlan: Optional[network.WLAN] = None
+wlan = None
 
 
 def up() -> network.WLAN:
