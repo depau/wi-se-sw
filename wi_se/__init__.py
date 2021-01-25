@@ -21,7 +21,8 @@ def main():
     wlan = network.up()
     loop.create_task(network.ensure_up())
 
+    # noinspection PyShadowingNames
     server = Server()
     loop.create_task(server.serve())
 
-    loop.run_until_complete()
+    loop.run_forever()
