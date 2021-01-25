@@ -1,5 +1,9 @@
 class Pin:
     OUT = "OUT"
+    IN = "IN"
+
+    PULL_UP = "PULL_UP"
+    PULL_DOWN = "PULL_DOWN"
 
     def __init__(self, *args):
         self.args = args
@@ -9,6 +13,12 @@ class Pin:
 
     def off(self):
         print(f"STUB: machine.Pin.{self.args}.off()")
+
+    def value(self, *a):
+        print(f"STUB: machine.Pin.{self.args}.value{a}")
+        if self.args[0] == 0:
+            return 1
+        return 0
 
 
 class PWM:
