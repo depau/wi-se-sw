@@ -128,6 +128,15 @@ class TTY:
         for key in kwargs:
             if key not in self.tty_conf:
                 raise ValueError('Option "{}" is not supported'.format(key))
-        self.tty_conf.update(kwargs)
-        self.uart.init(**self.tty_conf)
+        tty_conf = self.tty_conf.copy()
+        tty_conf.update(kwargs)
+
+        tty_conf['baudrate'] = int(tty_conf['baudrate'])
+        tty_conf['bits'] = int(tty_conf['bits'])
+        tty_conf['stop'] = int(tty_conf['stop'])
+        if tty_conf['parity'] not in (None, 0, 1):
+            raise ValueError('parity can only be null, 0, 1')
+
+        self.tty_conf = tty_conf
+        self.uart.init(**tty_conf)
         await self.broadcast(CMD_SET_WINDOW_TITLE + self.window_title)
