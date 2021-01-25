@@ -27,7 +27,7 @@ class HTTPRequest:
 
     @classmethod
     async def parse(cls, reader) -> 'HTTPRequest':
-        method, path, httpv = (await reader.readline()).decode().strip().split(' ')
+        method, path, httpv = (await reader.readline()).decode().strip().split(' ', 2)
 
         query, query_raw, segment = {}, None, None
         if '?' in path:
