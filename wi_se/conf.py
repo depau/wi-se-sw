@@ -5,5 +5,7 @@ except ImportError:
 
 from wi_se_conf import *
 
-if vars().get('http_basic_auth', None):
+try:
     http_basic_auth = "Basic " + b2a_base64(http_basic_auth.encode()).decode().strip()
+except NameError:
+    pass
