@@ -1,8 +1,11 @@
-try:
-    from binascii import b2a_base64
-except ImportError:
-    from ubinascii import b2a_base64
+import sys
 
+# Monkey patch built-ins to run in CPython for testing
+if sys.implementation.name != 'micropython':
+    import builtins
+    builtins.const = lambda x: x
+
+from binascii import b2a_base64
 from wi_se_conf import *
 
 try:
