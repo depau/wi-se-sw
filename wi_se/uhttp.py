@@ -71,8 +71,8 @@ class HTTPResponse:
         if 'Server' not in self.headers and 'server' not in self.headers:
             self.headers['Server'] = \
                 'Wi-Se Snek v' + wi_se.VERSION + \
-                ' {}/v{}.{}.{}'.format(sys.implementation.name, sys.implementation.version.major,
-                                       sys.implementation.version.minor, sys.implementation.version.micro)
+                ' {}/v{}'.format(sys.implementation.name,
+                                 '.'.join((str(i) for i in tuple(sys.implementation.version)[:3])))
         if 'Connection' not in self.headers and 'connection' not in self.headers:
             self.headers['Connection'] = "close"
         if 'Content-Type' not in self.headers and 'content-type' not in self.headers:
