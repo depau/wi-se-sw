@@ -41,3 +41,7 @@ class UART:
 
     def deinit(self):
         print(f"STUB: machine.UART,deinit()")
+
+
+def freq(new_clock):
+    print("OVERCLOCCCKKKK OMH SUCH SPEED VERY FAST {}".format(new_clock))

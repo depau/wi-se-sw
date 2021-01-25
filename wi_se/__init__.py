@@ -1,4 +1,5 @@
 import esp
+import machine
 import uasyncio as asyncio
 import uos as os
 from machine import Pin
@@ -13,6 +14,9 @@ boot0_pin = Pin(0, Pin.IN, Pin.PULL_UP)
 
 
 def main():
+    # He protec, he attac, but most importantly he overcloc
+    machine.freq(160000000)
+
     # Do not unbind REPL if BOOT0/FLASH button is pressed
     if conf.unbind_repl and boot0_pin.value():
         print("Unbinding REPL")
