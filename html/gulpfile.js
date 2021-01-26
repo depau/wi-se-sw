@@ -13,7 +13,7 @@ const genHeader = (size, buf, len) => {
     data += `unsigned int index_html_len = ${len};\n`;
     data += `unsigned int index_html_size = ${size};\n\n`;
 
-    data += "const char index_html[] PROGMEM = {\n  ";
+    data += "const uint8_t index_html[] PROGMEM = {\n  ";
     for (const value of buf) {
         idx++;
 
