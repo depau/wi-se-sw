@@ -1,0 +1,3 @@
+# Needed to work around a CLion integration bug
+
+SET(CMAKE_C_STANDARD 11)
