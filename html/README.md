@@ -1,3 +1,7 @@
+The HTML has been adapted from ttyd:
+
+https://github.com/tsl0922/ttyd/
+
 ## Prerequisites
 
 install [Yarn](https://yarnpkg.com), and run: `yarn install`.

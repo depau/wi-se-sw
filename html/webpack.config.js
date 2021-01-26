@@ -58,7 +58,7 @@ const baseConfig = {
                 removeComments: true,
                 collapseWhitespace: true,
             },
-            title: 'ttyd - Terminal',
+            title: 'Wi-Se - Terminal',
             template: './template.html'
         })
     ],
