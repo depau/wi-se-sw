@@ -11,7 +11,7 @@
 #include "server.h"
 
 
-void WiSeServer::start() {
+void WiSeServer::begin() {
     httpd->addHandler(websocket);
     httpd->on("/", HTTP_GET, handleIndex);
     httpd->on("/index.html", HTTP_GET, handleIndex);

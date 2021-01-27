@@ -24,7 +24,7 @@ public:
             websocket{websocket},
             ttyd{ttyd} {};
 
-    void start();
+    void begin();
 
     static bool checkHttpBasicAuth(AsyncWebServerRequest *request);
 
