@@ -6,6 +6,13 @@
 #include "config.h"
 #include "server.h"
 
+char token[17];
+AsyncWebServer httpd = AsyncWebServer(HTTP_LISTEN_PORT);
+AsyncWebSocket websocket = AsyncWebSocket("/ws");
+
+TTY ttyd(token, &websocket);
+WiSeServer server(token, &httpd, &websocket, &ttyd);
+
 void setup() {
     // Init UART
     UART_COMM.setRxBufferSize(4096);
@@ -60,7 +67,15 @@ void setup() {
     // Set up mDNS
     MDNS.addService("http", "tcp", 80);
 
-    server_start();
+    // Generate token
+    if (HTTP_AUTH_ENABLE) {
+        const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
+        for (int i; i < sizeof(token) - 1; i++) {
+            token[i] = charset[ESP.random() % (int) (sizeof charset - 1)];
+        }
+    }
+
+    server.start();
 }
 
 void loop() {
