@@ -122,8 +122,13 @@ class Server:
                 }).write_into(writer)
                 return
 
+        # Be consistent with C++ implementation
+        tty_conf = self.tty.tty_conf.copy()
+        if tty_conf["parity"] == None:
+            tty_conf["parity"] = -1
+
         await uhttp.HTTPResponse(
-            200, body=json.dumps(self.tty.tty_conf), headers={'Content-Type': 'application/json;charset=utf-8'}) \
+            200, body=json.dumps(tty_conf), headers={'Content-Type': 'application/json;charset=utf-8'}) \
             .write_into(writer)
 
     async def handle_uart_socket(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
