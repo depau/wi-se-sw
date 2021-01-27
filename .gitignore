@@ -3,3 +3,4 @@ CMakeLists.txt
 CMakeListsPrivate.txt
 cmake-build-*/ 
 .idea/
+include/config.h
