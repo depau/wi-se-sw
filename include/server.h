@@ -24,17 +24,21 @@ public:
             websocket{websocket},
             ttyd{ttyd} {};
 
+    void start();
+
     static bool checkHttpBasicAuth(AsyncWebServerRequest *request);
 
     static void handleIndex(AsyncWebServerRequest *request);
 
-    void handleStty(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const;
+    void handleSttyRequest(AsyncWebServerRequest *request) const;
+
+    void handleSttyBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const;
+
+    void sttySendResponse(AsyncWebServerRequest *request) const;
 
     void handleToken(AsyncWebServerRequest *request) const;
 
-    void start();
 
-    void getStty(AsyncWebServerRequest *request) const;
 };
 
 #endif //WI_SE_SW_SERVER_H

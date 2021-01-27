@@ -18,7 +18,10 @@ void WiSeServer::start() {
     httpd->on("/token", HTTP_GET,
               std::bind(&WiSeServer::handleToken, this, std::placeholders::_1));
     httpd->on("/stty", HTTP_GET | HTTP_POST,
-              std::bind(&WiSeServer::handleStty, this, std::placeholders::_1));
+              std::bind(&WiSeServer::handleSttyRequest, this, std::placeholders::_1),
+              nullptr,
+              std::bind(&WiSeServer::handleSttyBody, this, std::placeholders::_1, std::placeholders::_2,
+                        std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
 }
 
 
@@ -50,7 +53,7 @@ void WiSeServer::handleToken(AsyncWebServerRequest *request) const {
 }
 
 
-void WiSeServer::getStty(AsyncWebServerRequest *request) const {
+void WiSeServer::sttySendResponse(AsyncWebServerRequest *request) const {
     AsyncResponseStream *response = request->beginResponseStream("application/json");
 
     DynamicJsonDocument doc(200);
@@ -107,14 +110,18 @@ void sttyBadRequest(AsyncWebServerRequest *request) {
     request->send(400, "text/plain", "Invalid input in JSON");
 }
 
+void WiSeServer::handleSttyRequest(AsyncWebServerRequest *request) const {
+    if (request->method() == HTTP_GET) {
+        sttySendResponse(request);
+    }
+}
+
 void
-WiSeServer::handleStty(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const {
+WiSeServer::handleSttyBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index,
+                           size_t total) const {
     if (!checkHttpBasicAuth(request)) return;
 
-    if (request->method() == HTTP_GET) {
-        getStty(request);
-
-    } else if (request->method() == HTTP_POST) {
+    if (request->method() == HTTP_POST) {
         DynamicJsonDocument doc(200);
         deserializeJson(doc, data, len);
 
@@ -183,6 +190,6 @@ WiSeServer::handleStty(AsyncWebServerRequest *request, uint8_t *data, size_t len
         }
 
         ttyd->stty(baudrate, uartConfig);
-        getStty(request);
+        sttySendResponse(request);
     }
 }

@@ -76,6 +76,7 @@ void setup() {
     }
 
     server.start();
+    httpd.begin();
 }
 
 void loop() {
