@@ -87,7 +87,7 @@ void WiSeServer::sttySendResponse(AsyncWebServerRequest *request) const {
 
     switch (uartConfig & MASK_UART_PARITY) {
         case UART_PARITY_NONE:
-            doc["parity"] = -1;
+            doc["parity"] = nullptr;
             break;
         case UART_PARITY_EVEN:
             doc["parity"] = 0;
@@ -115,8 +115,11 @@ void WiSeServer::sttySendResponse(AsyncWebServerRequest *request) const {
     request->send(response);
 }
 
-void sttyBadRequest(AsyncWebServerRequest *request) {
-    request->send(400, "text/plain", "Invalid input in JSON");
+void invalidJsonBadRequest(AsyncWebServerRequest *request, const char *message) {
+    AsyncResponseStream *response = request->beginResponseStream("text/plain");
+    response->printf("Invalid input in JSON: %s", message);
+    response->setCode(400);
+    request->send(response);
 }
 
 void WiSeServer::handleSttyRequest(AsyncWebServerRequest *request) const {
@@ -131,7 +134,6 @@ void WiSeServer::handleSttyRequest(AsyncWebServerRequest *request) const {
 void
 WiSeServer::handleSttyBody(
         AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const {
-
     if (!checkHttpBasicAuth(request)) return;
 
     if (request->method() == HTTP_POST) {
@@ -143,14 +145,20 @@ WiSeServer::handleSttyBody(
         uint8_t uartConfig = ttyd->getUartConfig();
 
         if (doc.isNull()) {
-            return sttyBadRequest(request);
+            return invalidJsonBadRequest(request, "JSON is invalid");
         }
 
         if (doc.containsKey("baudrate")) {
+            if (!doc["baudrate"].is<unsigned int>()) {
+                return invalidJsonBadRequest(request, "\"baudrate\" must be a positive number");
+            }
             baudrate = doc["baudrate"];
         }
 
         if (doc.containsKey("bits")) {
+            if (!doc["bits"].is<unsigned int>()) {
+                return invalidJsonBadRequest(request, "\"bits\" must be a positive number, one of 5, 6, 7, 8");
+            }
             switch ((uint8_t) doc["bits"]) {
                 case 5:
                     uartConfig = (uartConfig & ~MASK_UART_BITS) | UART_NB_BIT_5;
@@ -165,26 +173,37 @@ WiSeServer::handleSttyBody(
                     uartConfig = (uartConfig & ~MASK_UART_BITS) | UART_NB_BIT_8;
                     break;
                 default:
-                    return sttyBadRequest(request);
+                    return invalidJsonBadRequest(request, "\"bits\" must be a positive number, one of 5, 6, 7, 8");
             }
         }
 
         if (doc.containsKey("parity")) {
-            switch ((int8_t) doc["parity"]) {
-                case -1:
-                    uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_NONE;
-                case 0:
-                    uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_EVEN;
-                    break;
-                case 1:
-                    uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_ODD;
-                    break;
-                default:
-                    return sttyBadRequest(request);
+            if (doc["parity"].isNull()) {
+                uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_NONE;
+            } else {
+                if (!doc["parity"].is<unsigned int>()) {
+                    return invalidJsonBadRequest(
+                            request, "\"parity\" must be a number or null, null (none), 0 (even), 1 (odd)");
+                }
+
+                switch ((signed int) doc["parity"]) {
+                    case 0:
+                        uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_EVEN;
+                        break;
+                    case 1:
+                        uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_ODD;
+                        break;
+                    default:
+                        return invalidJsonBadRequest(
+                                request, "\"parity\" must be a number or null, null (none), 0 (even), 1 (odd)");
+                }
             }
         }
 
         if (doc.containsKey("stop")) {
+            if (!doc["stop"].is<unsigned int>()) {
+                return invalidJsonBadRequest(request, "\"stop\" must be a positive number, one of 0, 1, 15, 2");
+            }
             switch ((uint8_t) doc["stop"]) {
                 case 0:
                     uartConfig = (uartConfig & ~MASK_UART_STOP) | UART_NB_STOP_BIT_0;
@@ -199,7 +218,7 @@ WiSeServer::handleSttyBody(
                     uartConfig = (uartConfig & ~MASK_UART_STOP) | UART_NB_STOP_BIT_2;
                     break;
                 default:
-                    return sttyBadRequest(request);
+                    return invalidJsonBadRequest(request, "\"stop\" must be a positive number, one of 0, 1, 15, 2");
             }
         }
 
