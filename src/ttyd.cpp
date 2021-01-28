@@ -15,7 +15,7 @@ void TTY::stty(uint32_t baudrate, uint8_t config) {
     this->uartBaudRate = baudrate;
     this->uartConfig = config;
 
-    debugf("TTY stty baud %d config %02X\n", baudrate, config);
+    debugf("TTY stty baud %d config %02X\r\n", baudrate, config);
 
     if (uartBegun) {
         UART_COMM.end();
@@ -101,7 +101,7 @@ void TTY::sendWindowTitle(uint32_t clientId) {
 }
 
 void TTY::sendInitialMessages(uint32_t clientId) {
-    debugf("TTY send initial message to %d\n", clientId);
+    debugf("TTY send initial message to %d\r\n", clientId);
     sendWindowTitle(clientId);
     sendClientConfiguration(clientId);
 }
@@ -111,7 +111,7 @@ bool TTY::isClientAuthenticated(uint32_t clientId) {
 }
 
 void TTY::removeClient(uint32_t clientId) {
-    debugf("TTY remove client %d\n", clientId);
+    debugf("TTY remove client %d\r\n", clientId);
     bool found = false;
 
     for (int i = 0; i < wsClientsLen; i++) {
@@ -131,7 +131,7 @@ void TTY::removeClient(uint32_t clientId) {
 
 bool TTY::canHandleClient(uint32_t clientId) const {
     if (wsClientsLen >= WS_MAX_CLIENTS) {
-        debugf("TTY too many clients (%d), refusing %d\n", wsClientsLen, clientId);
+        debugf("TTY too many clients (%d), refusing %d\r\n", wsClientsLen, clientId);
         // Won't accept more clients
         return false;
     }
@@ -139,7 +139,7 @@ bool TTY::canHandleClient(uint32_t clientId) const {
 }
 
 void TTY::nukeClient(uint32_t clientId, uint16_t closeReason) {
-    debugf("TTY nuke client %d\n", clientId);
+    debugf("TTY nuke client %d\r\n", clientId);
     this->removeClient(clientId);
     websocket->close(clientId, closeReason);
 }
@@ -149,14 +149,14 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
     bool isAuthToken = false;
     const char *authToken = nullptr;
 
-    debugf("TTY new message, client %d, command %c\n", clientId, command);
+    debugf("TTY new message, client %d, command %c\r\n", clientId, command);
 
     if (command == CMD_JSON_DATA) {
         DynamicJsonDocument doc(200);
         deserializeJson(doc, buf, len);
 
         if (doc.isNull()) {
-            debugf("TTY client sent bad auth json %d\n", clientId);
+            debugf("TTY client sent bad auth json %d\r\n", clientId);
             nukeClient(clientId, WS_CLOSE_BAD_DATA);
             return;
         }
@@ -169,11 +169,11 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
     if (!isClientAuthenticated(clientId)) {
         if (HTTP_AUTH_ENABLE &&
             (!isAuthToken || authToken == nullptr || strncmp((char *) authToken, token, HTTP_AUTH_TOKEN_LEN) != 0)) {
-            debugf("TTY client policy violation %d\n", clientId);
+            debugf("TTY client policy violation %d\r\n", clientId);
             nukeClient(clientId, WS_CLOSE_POLICY_VIOLATION);
             return;
         }
-        debugf("TTY client authenticated %d\n", clientId);
+        debugf("TTY client authenticated %d\r\n", clientId);
         markClientAuthenticated(clientId);
         sendInitialMessages(clientId);
     }
@@ -187,7 +187,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
 }
 
 void TTY::handleWebSocketPong(uint32_t clientId) {
-    debugf("TTY client seen %d\n", clientId);
+    debugf("TTY client seen %d\r\n", clientId);
     clientSeen(clientId);
 }
 
@@ -241,17 +241,17 @@ void TTY::performHousekeeping() {
     uint64_t now = millis();
     if (lastLedHandleMillis + LED_HANDLE_EVERY_MILLIS < now) {
         lastLedHandleMillis = now;
-        //debugf("TTY handle LED\n");
+        //debugf("TTY handle LED\r\n");
         handleLedBlinkRequests();
     }
     if (lastClientTimeoutCheckMillis + CLIENT_TIMEOUT_CHECK_EVERY_MILLIS < now) {
         lastClientTimeoutCheckMillis = now;
-        debugf("TTY handle timeouts\n");
+        debugf("TTY handle timeouts\r\n");
         checkClientTimeouts();
     }
     if (lastClientPingMillis + CLIENT_PING_EVERY_MILLIS < now) {
         lastClientPingMillis = now;
-        debugf("TTY handle ping\n");
+        debugf("TTY handle ping\r\n");
         pingClients();
     }
 }
@@ -305,13 +305,13 @@ void TTY::dispatchUart() {
     uint32_t singleClientId = wsClients[0];
     if (wsClientsLen == 1) {
         // Fast path is usable! The buffer will not be copied any further.
-        debugf("Sending through FAST path\n");
+        debugf("Sending through FAST path\r\n");
         AsyncWebSocketMessage *message = new AsyncWebSocketBasicMessageNoCopy((const char *) buf, read + 1, WS_BINARY);
         websocket->message(singleClientId, message);
         // The buffer is not being freed on purpose since AsyncWebSocket will do it later
     } else {
         // We need to go the slow path - the buffer will end up being copied wsClientLen + 1 times
-        debugf("Sending through SLOW path\n");
+        debugf("Sending through SLOW path\r\n");
         broadcastBufferToClients((uint8_t *) buf, read + 1);
         free(buf);
     }

@@ -39,7 +39,7 @@ void setup() {
     WiFi.hostname(WIFI_HOSTNAME);
 
     if (WIFI_MODE == WIFI_STA) {
-        debugf("Wi-Fi STA connecting\n");
+        debugf("Wi-Fi STA connecting\r\n");
 
         // Blink Wi-Fi LED
         analogWriteFreq(2);
@@ -57,9 +57,9 @@ void setup() {
         analogWrite(LED_WIFI, 0);
         analogWriteFreq(1000);
 
-        debugf("Wi-Fi STA connected\n");
+        debugf("Wi-Fi STA connected\r\n");
     } else {
-        debugf("Turning on soft AP\n");
+        debugf("Turning on soft AP\r\n");
         WiFi.softAP(WIFI_SSID, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
     }
 
@@ -80,7 +80,7 @@ void setup() {
 
     server.begin();
     httpd.begin();
-    debugf("HTTP server is up\n");
+    debugf("HTTP server is up\r\n");
 }
 
 void loop() {

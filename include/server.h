@@ -75,11 +75,11 @@ private:
                 firstEmpty = i;
             }
             if (clientDataBufClientIds[i] == clientId) {
-                debugf("Found buffer for %d at pos %d\n", clientId, i);
+                debugf("Found buffer for %d at pos %d\r\n", clientId, i);
                 return i;
             }
         }
-        debugf("Allocating new buffer for %d at pos %d\n", clientId, firstEmpty);
+        debugf("Allocating new buffer for %d at pos %d\r\n", clientId, firstEmpty);
         clientDataBuffers[firstEmpty] = static_cast<uint8_t *>(malloc(WS_FRAGMENTED_DATA_BUFFER_SIZE));
         clientDataBufClientIds[firstEmpty] = clientId;
         return firstEmpty;
