@@ -85,14 +85,16 @@ private:
         return firstEmpty;
     }
 
-    void deallocClientDataBuffer(int pos) {
-        if (clientDataBuffers[pos] != nullptr) {
-            debugf("Freeing buffer for %lld at pos %d, pointer is %p\n", clientDataBufClientIds[pos], pos, clientDataBuffers[pos]);
-            free(clientDataBuffers[pos]);
-            clientDataBuffers[pos] = nullptr;
+    void deallocClientDataBuffer(uint32_t clientId) {
+        for (int i = 0; i < WS_MAX_CLIENTS; i++) {
+            if (clientDataBufClientIds[i] == clientId) {
+                debugf("Freeing buffer for %d at pos %d, pointer is %p\r\n", clientId, i, clientDataBuffers[i]);
+                free(clientDataBuffers[clientId]);
+                clientDataBuffers[i] = nullptr;
+                clientDataBufClientIds[i] = WS_DATA_BUF_EMPTY_SENTINEL;
+                break;
+            }
         }
-        clientDataBufClientIds[pos] = WS_DATA_BUF_EMPTY_SENTINEL;
-        clientDataBufLens[pos] = 0;
     }
 };
 
