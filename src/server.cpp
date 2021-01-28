@@ -227,6 +227,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
             debugf("WS client disconnected %d\r\n", client->id());
             ttyd->removeClient(client->id());
             websocket->cleanupClients(WS_MAX_CLIENTS);
+            debugf("DEALLOC CASE DISCONNECT client ID %d\r\n", client->id());
             deallocClientDataBuffer(client->id());
             break;
         case WS_EVT_ERROR:
@@ -263,6 +264,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
                     ttyd->removeClient(client->id());
                     websocket->close(WS_CLOSE_BAD_CONDITION);
                     websocket->cleanupClients(WS_MAX_CLIENTS);
+                    debugf("DEALLOC CASE CLIENT INDUCED BUF OVERFLOW client ID %d\r\n", client->id());
                     deallocClientDataBuffer(client->id());
                     break;
                 }
@@ -283,6 +285,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
     if (shouldDispatchMessage) {
         debugf("WS client data dispatch %d, len %d\r\n", client->id(), *buf_len);
         ttyd->handleWebSocketMessage(client->id(), buffer, *buf_len);
+        debugf("DEALLOC CASE DISPATCH client ID %d\r\n", client->id());
         deallocClientDataBuffer(client->id());
     }
 }
