@@ -9,10 +9,9 @@
 #include "config.h"
 #include "html.h"
 #include "server.h"
-
+#include "debug.h"
 
 void WiSeServer::begin() {
-    httpd->addHandler(websocket);
     httpd->on("/", HTTP_GET, handleIndex);
     httpd->on("/index.html", HTTP_GET, handleIndex);
     httpd->on("/token", HTTP_GET,
@@ -22,6 +21,14 @@ void WiSeServer::begin() {
               nullptr,
               std::bind(&WiSeServer::handleSttyBody, this, std::placeholders::_1, std::placeholders::_2,
                         std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+    httpd->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
+        request->send(200, "text/plain", String(ESP.getFreeHeap()));
+    });
+    websocket->onEvent(std::bind(&WiSeServer::onWebSocketEvent, this, std::placeholders::_1, std::placeholders::_2,
+                                 std::placeholders::_3, std::placeholders::_4, std::placeholders::_5,
+                                 std::placeholders::_6));
+    httpd->addHandler(websocket);
+    debugf("Web app server is up\n");
 }
 
 
@@ -38,6 +45,7 @@ bool WiSeServer::checkHttpBasicAuth(AsyncWebServerRequest *request) {
 
 void WiSeServer::handleIndex(AsyncWebServerRequest *request) {
     if (!checkHttpBasicAuth(request)) return;
+    debugf("GET /\n");
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, index_html_len);
     response->addHeader("Content-Encoding", "gzip");
     request->send(response);
@@ -46,6 +54,7 @@ void WiSeServer::handleIndex(AsyncWebServerRequest *request) {
 
 void WiSeServer::handleToken(AsyncWebServerRequest *request) const {
     if (!checkHttpBasicAuth(request)) return;
+    debugf("GET /token\n");
     char response[100] = R"({"token": ")";
     strcat(response, this->token);
     strcat(response, "\"}");
@@ -111,17 +120,22 @@ void sttyBadRequest(AsyncWebServerRequest *request) {
 }
 
 void WiSeServer::handleSttyRequest(AsyncWebServerRequest *request) const {
+    if (!checkHttpBasicAuth(request)) return;
+
     if (request->method() == HTTP_GET) {
+        debugf("GET /stty\n");
         sttySendResponse(request);
     }
 }
 
 void
-WiSeServer::handleSttyBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index,
-                           size_t total) const {
+WiSeServer::handleSttyBody(
+        AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const {
+
     if (!checkHttpBasicAuth(request)) return;
 
     if (request->method() == HTTP_POST) {
+        debugf("POST /stty\n");
         DynamicJsonDocument doc(200);
         deserializeJson(doc, data, len);
 
@@ -156,7 +170,7 @@ WiSeServer::handleSttyBody(AsyncWebServerRequest *request, uint8_t *data, size_t
         }
 
         if (doc.containsKey("parity")) {
-            switch ((uint8_t) doc["parity"]) {
+            switch ((int8_t) doc["parity"]) {
                 case -1:
                     uartConfig = (uartConfig & ~MASK_UART_PARITY) | UART_PARITY_NONE;
                 case 0:
@@ -191,5 +205,84 @@ WiSeServer::handleSttyBody(AsyncWebServerRequest *request, uint8_t *data, size_t
 
         ttyd->stty(baudrate, uartConfig);
         sttySendResponse(request);
+    }
+}
+
+void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg,
+                                  uint8_t *data, size_t len) {
+    AwsFrameInfo *info = nullptr;
+    uint8_t *buffer = nullptr;
+    size_t *buf_len = nullptr;
+    bool shouldDispatchMessage = false;
+
+    switch (type) {
+        case WS_EVT_CONNECT:
+            debugf("WS new client %d\n", client->id());
+            if (!ttyd->canHandleClient(client->id())) {
+                client->close(WS_CLOSE_TOO_BIG);
+                websocket->cleanupClients(WS_MAX_CLIENTS);
+            }
+            break;
+        case WS_EVT_DISCONNECT:
+            debugf("WS client disconnected %d\n", client->id());
+            ttyd->removeClient(client->id());
+            websocket->cleanupClients(WS_MAX_CLIENTS);
+            deallocClientDataBuffer(client->id());
+            break;
+        case WS_EVT_ERROR:
+            debugf("WS client error [%u] error(%u): %s\n", client->id(), *((uint16_t *) arg), (char *) data);
+            client->printf(R"({"error": "%u: %s"})", *((uint16_t *) arg), (char *) data);
+//            ttyd->removeClient(client->id());
+//            client->close(WS_CLOSE_BAD_CONDITION);
+//            websocket->cleanupClients(WS_MAX_CLIENTS);
+//            deallocClientDataBuffer(client->id());
+            break;
+        case WS_EVT_PONG:
+            debugf("WS client pong %d\n", client->id());
+            ttyd->handleWebSocketPong(client->id());
+            break;
+        case WS_EVT_DATA:
+            info = (AwsFrameInfo *) arg;
+            shouldDispatchMessage = false;
+
+            if (info->final && info->index == 0 && info->len == len) {
+                // Entire message in one frame
+                debugf("WS client data no-frag final %d, len %d\n", client->id(), len);
+                buffer = data;
+                buf_len = &len;
+                shouldDispatchMessage = true;
+            } else {
+                // Message is split into multiple frames or frame is fragmented
+                debugf("WS client data frag %d, index %llu len %d\n", client->id(), info->index, len);
+                int pos = findDataBufferForClient(client->id());
+                buffer = clientDataBuffers[pos];
+                buf_len = &clientDataBufLens[pos];
+
+                if (*buf_len + len > WS_FRAGMENTED_DATA_BUFFER_SIZE) {
+                    debugf("WS client nuke due to buffer overflow %d\n", client->id());
+                    ttyd->removeClient(client->id());
+                    websocket->close(WS_CLOSE_BAD_CONDITION);
+                    websocket->cleanupClients(WS_MAX_CLIENTS);
+                    deallocClientDataBuffer(client->id());
+                    break;
+                }
+
+                uint8_t *tmpBuffer = buffer + *buf_len;
+                memcpy(tmpBuffer, data, len);
+                *buf_len += len;
+
+                if (info->final) {
+                    shouldDispatchMessage = true;
+                }
+            }
+
+            break;
+        default:;
+    }
+
+    if (shouldDispatchMessage) {
+        debugf("WS client data dispatch %d, len %d\n", client->id(), *buf_len);
+        ttyd->handleWebSocketMessage(client->id(), buffer, *buf_len);
+        deallocClientDataBuffer(client->id());
     }
 }

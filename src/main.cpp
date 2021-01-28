@@ -1,12 +1,12 @@
 #include <Arduino.h>
 //#include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
 
 #include "config.h"
 #include "server.h"
+#include "debug.h"
 
-char token[17];
+char token[HTTP_AUTH_TOKEN_LEN + 1];
 AsyncWebServer httpd = AsyncWebServer(HTTP_LISTEN_PORT);
 AsyncWebSocket websocket = AsyncWebSocket("/ws");
 
@@ -15,11 +15,13 @@ WiSeServer server(token, &httpd, &websocket, &ttyd);
 
 void setup() {
     // Init UART
-    UART_COMM.setRxBufferSize(4096);
-    UART_COMM.begin(UART_COMM_BAUD, (SerialConfig) UART_COMM_CONFIG);
+    ttyd.stty(UART_COMM_BAUD, UART_COMM_CONFIG);
+
+#if ENABLE_DEBUG == 1
     if (UART_COMM != UART_DEBUG) {
         UART_DEBUG.begin(UART_DEBUG_BAUD, (SerialConfig) UART_DEBUG_CONFIG);
     }
+#endif
 
     // Init LEDs
     pinMode(LED_WIFI, OUTPUT);
@@ -37,23 +39,27 @@ void setup() {
     WiFi.hostname(WIFI_HOSTNAME);
 
     if (WIFI_MODE == WIFI_STA) {
-        UART_DEBUG.println(F("Wi-Fi STA connecting"));
+        debugf("Wi-Fi STA connecting\n");
 
         // Blink Wi-Fi LED
         analogWriteFreq(2);
         analogWrite(LED_WIFI, 255);
 
-        do {
-            UART_DEBUG.println(F("Connection attempt"));
-            WiFi.begin(WIFI_SSID, WIFI_PASS);
-        } while (WiFi.waitForConnectResult() != WL_CONNECTED);
+        WiFi.setOutputPower(17.5);
+        WiFi.setPhyMode(WIFI_PHY_MODE_11N);
+        WiFi.setSleepMode(WIFI_NONE_SLEEP);
+
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+        while (WiFi.status() != WL_CONNECTED) {
+            delay(500);
+        }
 
         analogWrite(LED_WIFI, 0);
         analogWriteFreq(1000);
 
-        UART_DEBUG.println(F("Wi-Fi STA connected"));
+        debugf("Wi-Fi STA connected\n");
     } else {
-        UART_DEBUG.println(F("Turning on soft AP"));
+        debugf("Turning on soft AP\n");
         WiFi.softAP(WIFI_SSID, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
     }
 
@@ -64,31 +70,22 @@ void setup() {
     // TODO: actually do it
     // ArduinoOTA.setHostname(WIFI_HOSTNAME);
 
-    // Set up mDNS
-    MDNS.addService("http", "tcp", 80);
-
     // Generate token
     if (HTTP_AUTH_ENABLE) {
         const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
-        for (int i; i < sizeof(token) - 1; i++) {
+        for (int i; i < HTTP_AUTH_TOKEN_LEN; i++) {
             token[i] = charset[ESP.random() % (int) (sizeof charset - 1)];
         }
     }
 
     server.begin();
     httpd.begin();
+    debugf("HTTP server is up\n");
 }
 
 void loop() {
-    // turn the LED on (HIGH is the voltage level)
-    digitalWrite(LED_BUILTIN, HIGH);
-
-    // wait for a second
-    delay(1000);
-
-    // turn the LED off by making the voltage LOW
-    digitalWrite(LED_BUILTIN, LOW);
-
-    // wait for a second
-    delay(1000);
+    ttyd.dispatchUart();
+    yield();
+    ttyd.performHousekeeping();
+    yield();
 }
