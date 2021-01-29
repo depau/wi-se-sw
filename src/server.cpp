@@ -12,11 +12,10 @@
 #include "debug.h"
 
 void WiSeServer::begin() {
+    DefaultHeaders::Instance().addHeader("Server", serverHeader);
 #ifdef CORS_ALLOW_ORIGIN
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN);
 #endif
-
-    httpd->begin();
 
     httpd->on("/", HTTP_GET, handleIndex);
     httpd->on("/index.html", HTTP_GET, handleIndex);

@@ -7,6 +7,7 @@
 
 #include "ttyd.h"
 #include "debug.h"
+#include "version.h"
 
 #define MASK_UART_PARITY  0B00000011
 #define MASK_UART_BITS    0B00001100
@@ -34,6 +35,7 @@ private:
     uint64_t clientDataBufClientIds[WS_MAX_CLIENTS] = {WS_DATA_BUF_EMPTY_SENTINEL};
     uint32_t clientDataBufLens[WS_MAX_CLIENTS] = {0};
     uint8_t *clientDataBuffers[WS_MAX_CLIENTS] = {0};
+    char serverHeader[100] = {0};
 
 public:
     char *token;
@@ -45,7 +47,12 @@ public:
             token{token},
             httpd{httpd},
             websocket{websocket},
-            ttyd{ttyd} {};
+            ttyd{ttyd} {
+        // Format server header
+        size_t end = snprintf(serverHeader, sizeof(serverHeader) / sizeof(char), "%s ESP/", "Wi-Se/" VERSION);
+        ESP.getFullVersion().toCharArray(serverHeader + end, (sizeof(serverHeader) / sizeof(char)));
+        serverHeader[end + ESP.getFullVersion().length()] = 0;
+    };
 
     void begin();
 
