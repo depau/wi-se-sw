@@ -268,7 +268,7 @@ void TTY::dispatchUart() {
     if (available < UART_RX_SOFT_MIN) {
         // Wait for roughly the amount of time it takes for an amount of data 2/3 the size of the WS buffer to be
         // received over UART at the current rate, but not for too long so we don't affect responsiveness
-        delay(std::min((int) (1000L * WS_SEND_BUF_SIZE * 8L * 2 / 3 / uartBaudRate), 5));
+        delay(UART_BUFFER_BELOW_SOFT_MIN_DYNAMIC_DELAY);
         available = UART_COMM.available();
     }
 

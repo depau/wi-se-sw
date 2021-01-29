@@ -57,20 +57,36 @@
 // Make sure it is a valid JSON and that it's also a valid C string.
 #define TTYD_WEB_CONFIG "{\"disableLeaveAlert\": true}"
 
+
+#if BOARD_TYPE == 0 // don't change
+
 // LED configuration - only if board type is custom
 // Wi-Se board LEDs are pre-configured in wise_boards.h
-#if BOARD_TYPE == 0
 #define LED_WIFI 2
 #define LED_STATUS 2
 #define LED_TX 2
 #define LED_RX 2
+
 #endif //BOARD_TYPE
 
+// LED timings (milliseconds)
 #define LED_ON_TIME 15
 #define LED_OFF_TIME 25
 
-// End of configuration
+// Advanced buffering parameters
+// Tweak if you feel brave. Report any improvements, but make sure you test them at 1500000 8N1 and that it works better
+// than the defaults before submitting.
+// Note that these buffers do not cause measurable latency, they need to be sort of high so that the WebSocket sender
+// can catch up as the UART is being stuffed with high speed data.
 
+#define UART_RX_BUF_SIZE 10240
+#define UART_RX_SOFT_MIN (WS_SEND_BUF_SIZE * 3 / 2)
+#define UART_BUFFER_BELOW_SOFT_MIN_DYNAMIC_DELAY (std::min((int) (1000L * WS_SEND_BUF_SIZE * 8L * 2 / 3 / uartBaudRate), 5))
+
+#define WS_SEND_BUF_SIZE 1536
+#define WS_FRAGMENTED_DATA_BUFFER_SIZE 1536
+
+// End of configuration
 #include "wise_boards.h"
 
 #endif // WI_SE_SW_CONFIG_H
