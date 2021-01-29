@@ -182,6 +182,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
 
     if (command == CMD_INPUT) {
         UART_COMM.write((const char *) buf + 1, len - 1);
+        requestLedBlink.leds.tx = true;
     }
     // No other command is implemented due to technical limitations and limited resources
 }
@@ -297,6 +298,8 @@ void TTY::dispatchUart() {
 
     read++;  // Take the command into account
     buf = (char *) realloc(buf, (read + 1) * sizeof(char));  // Also take terminator into account
+
+    requestLedBlink.leds.rx = true;
 
     BENCH t1 = micros64();
 
