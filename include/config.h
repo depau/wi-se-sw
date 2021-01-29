@@ -21,7 +21,7 @@
 
 // UART configuration
 #define UART_COMM Serial
-#define UART_COMM_BAUD 1500000
+#define UART_COMM_BAUD 115200
 #define UART_COMM_CONFIG (UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)
 
 #define UART_DEBUG Serial1
