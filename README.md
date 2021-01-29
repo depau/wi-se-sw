@@ -101,7 +101,7 @@ While it can and it will reach up to 1500000 bps, it will only do so if:
 
 Sending a continuous stream of data (for example running Zmodem, `nyancat`,
 similar terminal-based animations or in general any application that sends more
-than approx. one screen of data at a time without pausing) will result in
+than approx. two screens of data at a time without pausing) will result in
 truncation.
 
 The default buffering settings have been tuned to be able to run "normal" 
