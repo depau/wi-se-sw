@@ -49,7 +49,7 @@
 #define HTTP_AUTH_PASS "password"
 
 // CORS - Uncomment to allow all origins
-#define CORS_ALLOW_ORIGIN "*"
+//#define CORS_ALLOW_ORIGIN "*"
 
 // WebSocket configuration
 #define WS_MAX_CLIENTS 3
