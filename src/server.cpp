@@ -18,6 +18,7 @@ void WiSeServer::begin() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN);
 #endif
 
+    // Handle regular HTTP requests
     httpd->on("/", HTTP_GET, handleIndex);
     httpd->on("/index.html", HTTP_GET, handleIndex);
     httpd->on("/token", HTTP_GET,
@@ -30,13 +31,23 @@ void WiSeServer::begin() {
     httpd->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
     });
+
+    // Handle CORS preflight
+    httpd->onNotFound([](AsyncWebServerRequest *request) {
+        if (request->method() == HTTP_OPTIONS) {
+            request->send(200);
+        } else {
+            request->send(404);
+        }
+    });
+
+    // Handle WebSocket connections
     websocket->onEvent(std::bind(&WiSeServer::onWebSocketEvent, this, std::placeholders::_1, std::placeholders::_2,
                                  std::placeholders::_3, std::placeholders::_4, std::placeholders::_5,
                                  std::placeholders::_6));
     httpd->addHandler(websocket);
     debugf("Web app server is up\r\n");
 }
-
 
 bool WiSeServer::checkHttpBasicAuth(AsyncWebServerRequest *request) {
     if (!HTTP_AUTH_ENABLE) {
