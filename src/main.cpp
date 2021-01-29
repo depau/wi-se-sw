@@ -79,7 +79,6 @@ void setup() {
     }
 
     server.begin();
-    httpd.begin();
     debugf("HTTP server is up\r\n");
 }
 
