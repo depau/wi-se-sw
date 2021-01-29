@@ -2,6 +2,8 @@
 
 > *Wireless Serial*
 
+![Demo](https://i.postimg.cc/d3TTJzc5/wi-se.gif)
+
 This software allows for using an ESP8266 board as a remote UART terminal.
 It is very fast, reaching (with [caveats](#caveats)) up to 1500000bps rates.
 
