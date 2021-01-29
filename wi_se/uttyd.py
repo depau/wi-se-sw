@@ -137,11 +137,8 @@ class TTY:
         tty_conf['baudrate'] = int(tty_conf['baudrate'])
         tty_conf['bits'] = int(tty_conf['bits'])
         tty_conf['stop'] = int(tty_conf['stop'])
-        if tty_conf['parity'] not in (-1, 0, 1):
-            raise ValueError('parity can only be -1 (none), 0 (even), 1 (odd)')
-        # Make this consistent with the C++ implementation
-        if tty_conf['parity'] == -1:
-            tty_conf['parity'] = None
+        if tty_conf['parity'] not in (None, 0, 1):
+            raise ValueError('parity can only be null, 0, 1')
 
         self.tty_conf = tty_conf
         self.uart.init(**tty_conf)
