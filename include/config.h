@@ -86,6 +86,12 @@
 #define UART_RX_SOFT_MIN (WS_SEND_BUF_SIZE * 3 / 2)
 #define UART_BUFFER_BELOW_SOFT_MIN_DYNAMIC_DELAY (std::min((int) (1000L * WS_SEND_BUF_SIZE * 8L * 2 / 3 / uartBaudRate), 5))
 
+// UART software flow control, improves stability. It must be supported by the connected device for it to make any
+// difference.
+#define UART_SW_FLOW_CONTROL 1
+#define UART_SW_FLOW_CONTROL_LOW_WATERMARK UART_RX_SOFT_MIN + 1
+#define UART_SW_FLOW_CONTROL_HIGH_WATERMARK WS_SEND_BUF_SIZE - 1
+
 #define WS_SEND_BUF_SIZE 1536
 #define WS_FRAGMENTED_DATA_BUFFER_SIZE 1536
 

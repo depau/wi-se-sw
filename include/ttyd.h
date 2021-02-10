@@ -29,6 +29,12 @@ const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 
 #define CLIENT_TIMEOUT_MILLIS (WS_PING_INTERVAL * 1033)  // WS_PING_INTERVAL * 103.3% == ~310s with a default of 300s
 
+#define FLOW_CTL_SRC_LOCAL  0b01
+#define FLOW_CTL_SRC_REMOTE 0b10
+
+#define FLOW_CTL_STOP_CHAR 0x13
+#define FLOW_CTL_CONT_CHAR 0x11
+
 struct led_blink_request_t {
     bool rx;
     bool tx;
@@ -48,7 +54,6 @@ union led_blink_schedule_u {
     struct led_blink_schedule_t leds;
     uint64_t array[2];
 };
-
 
 class TTY {
 private:
@@ -70,6 +75,8 @@ private:
     union led_blink_request_u requestLedBlink = {{false, false}};
     union led_blink_schedule_u scheduledLedsOffMillis = {{0}};
     union led_blink_schedule_u ledsBusyUntilMillis = {{0}};
+
+    uint8_t flowControlStatus = 0;
 
 public:
     explicit TTY(char *token, AsyncWebSocket *websocket) : token{token}, websocket{websocket} {}
@@ -135,6 +142,10 @@ private:
     size_t snprintWindowTitle(char *dest, size_t len) const;
 
     void sendWindowTitle(uint32_t clientId = -1);
+
+    void flowControlRequestStop(uint8_t source);
+
+    void flowControlRequestResume(uint8_t source);
 };
 
 #endif //WI_SE_SW_TTYD_H

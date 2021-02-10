@@ -183,8 +183,13 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
     if (command == CMD_INPUT) {
         UART_COMM.write((const char *) buf + 1, len - 1);
         requestLedBlink.leds.tx = true;
+    } else if (command == CMD_PAUSE) {
+        flowControlRequestStop(FLOW_CTL_SRC_REMOTE);
+    } else if (command == CMD_RESUME) {
+        flowControlRequestResume(FLOW_CTL_SRC_REMOTE);
     }
-    // No other command is implemented due to technical limitations and limited resources
+    // Resize isn't implemented since... well... people in the 80's didn't expect they'd be resizing terminals 10 years
+    // later
 }
 
 void TTY::handleWebSocketPong(uint32_t clientId) {
@@ -210,6 +215,29 @@ void TTY::checkClientTimeouts() {
         }
     }
     websocket->cleanupClients(WS_MAX_CLIENTS);
+}
+
+void TTY::flowControlRequestStop(uint8_t source) {
+    if (!UART_SW_FLOW_CONTROL) {
+        return;
+    }
+    if (flowControlStatus == 0) {
+        UART_COMM.write(FLOW_CTL_STOP_CHAR);
+    }
+    flowControlStatus |= source;
+}
+
+void TTY::flowControlRequestResume(uint8_t source) {
+    if (!UART_SW_FLOW_CONTROL) {
+        return;
+    }
+    if (flowControlStatus == 0) {
+        return;
+    }
+    flowControlStatus &= ~source;
+    if (flowControlStatus == 0) {
+        UART_COMM.write(FLOW_CTL_CONT_CHAR);
+    }
 }
 
 void TTY::pingClients() {
@@ -271,6 +299,20 @@ void TTY::dispatchUart() {
         // received over UART at the current rate, but not for too long so we don't affect responsiveness
         delay(UART_BUFFER_BELOW_SOFT_MIN_DYNAMIC_DELAY);
         available = UART_COMM.available();
+    }
+
+    // Request flow stop/continue when the buffer is about to overflow
+    bool wsCanSend = wsClientsLen > 0 && websocket->client(wsClients[0])->canSend();
+    if (available > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !wsCanSend) {
+        flowControlRequestStop(FLOW_CTL_SRC_LOCAL);
+    } else if (available < UART_SW_FLOW_CONTROL_LOW_WATERMARK) {
+        flowControlRequestResume(FLOW_CTL_SRC_LOCAL);
+    }
+
+    // Don't bother sending if the WebSocket message queue is full, it will be dropped anyway and garble the terminal.
+    // We'll come back here at the next iteration.
+    if (!wsCanSend) {
+        return;
     }
 
     size_t bufsize = std::min(available + 512, (size_t) WS_SEND_BUF_SIZE);
