@@ -285,6 +285,15 @@ void TTY::performHousekeeping() {
     }
 }
 
+bool TTY::wsCanSend() {
+    for (int i = 0; i < wsClientsLen; i++) {
+        if (websocket->client(wsClients[i])->queueIsFull()) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
         return;
@@ -302,8 +311,8 @@ void TTY::dispatchUart() {
     }
 
     // Request flow stop/continue when the buffer is about to overflow
-    bool wsCanSend = wsClientsLen > 0 && websocket->client(wsClients[0])->canSend();
-    if (available > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !wsCanSend) {
+    bool canSend = wsCanSend();
+    if (available > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !canSend) {
         flowControlRequestStop(FLOW_CTL_SRC_LOCAL);
     } else if (available < UART_SW_FLOW_CONTROL_LOW_WATERMARK) {
         flowControlRequestResume(FLOW_CTL_SRC_LOCAL);
@@ -311,7 +320,7 @@ void TTY::dispatchUart() {
 
     // Don't bother sending if the WebSocket message queue is full, it will be dropped anyway and garble the terminal.
     // We'll come back here at the next iteration.
-    if (!wsCanSend) {
+    if (!canSend) {
         return;
     }
 

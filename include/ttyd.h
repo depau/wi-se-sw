@@ -146,6 +146,8 @@ private:
     void flowControlRequestStop(uint8_t source);
 
     void flowControlRequestResume(uint8_t source);
+
+    bool wsCanSend();
 };
 
 #endif //WI_SE_SW_TTYD_H
