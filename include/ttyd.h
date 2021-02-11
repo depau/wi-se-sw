@@ -67,6 +67,7 @@ private:
     uint8_t wsClientsLen = 0;
     uint32_t wsClients[WS_MAX_CLIENTS] = {0};
     uint64_t wsClientsLastSeen[WS_MAX_CLIENTS] = {0};
+    uint8_t pendingAuthClients = 0;
 
     uint64_t lastClientPingMillis = millis();
     uint64_t lastClientTimeoutCheckMillis = millis();
@@ -91,7 +92,7 @@ public:
 
     void stty(uint32_t baudrate, uint8_t config);
 
-    bool canHandleClient(uint32_t clientId) const;
+    bool onNewWebSocketClient(uint32_t clientId);
 
     void removeClient(uint32_t clientId);
 
@@ -133,21 +134,23 @@ private:
 
     void nukeClient(uint32_t clientId, uint16_t closeReason);
 
-    void broadcastBufferToClients(uint8_t *buf, size_t len);
-
     void sendInitialMessages(uint32_t clientId);
 
     void sendClientConfiguration(uint32_t clientId);
 
     size_t snprintWindowTitle(char *dest, size_t len) const;
 
-    void sendWindowTitle(uint32_t clientId = -1);
+    void sendWindowTitle(int64_t clientId = -1);
 
     void flowControlRequestStop(uint8_t source);
 
     void flowControlRequestResume(uint8_t source);
 
     bool wsCanSend();
+
+    bool areAllClientsAuthenticated() const;
+
+    void broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer);
 };
 
 #endif //WI_SE_SW_TTYD_H

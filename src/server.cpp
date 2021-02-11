@@ -254,7 +254,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
     switch (type) {
         case WS_EVT_CONNECT:
             debugf("WS new client %d\r\n", client->id());
-            if (!ttyd->canHandleClient(client->id())) {
+            if (!ttyd->onNewWebSocketClient(client->id())) {
                 client->close(WS_CLOSE_TOO_BIG);
                 websocket->cleanupClients(WS_MAX_CLIENTS);
             }

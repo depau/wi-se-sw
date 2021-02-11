@@ -9,7 +9,6 @@
 #include "config.h"
 #include "server.h"
 #include "ttyd.h"
-#include "ws_nocopy.h"
 
 void TTY::stty(uint32_t baudrate, uint8_t config) {
     this->uartBaudRate = baudrate;
@@ -33,6 +32,7 @@ void TTY::stty(uint32_t baudrate, uint8_t config) {
 
 void TTY::markClientAuthenticated(uint32_t clientId) {
     wsClients[wsClientsLen++] = clientId;
+    pendingAuthClients--;
 }
 
 size_t TTY::snprintWindowTitle(char *dest, size_t len) const {
@@ -88,15 +88,16 @@ void TTY::sendClientConfiguration(uint32_t clientId) {
     websocket->binary(clientId, ttydWebConfig);
 }
 
-void TTY::sendWindowTitle(uint32_t clientId) {
+void TTY::sendWindowTitle(int64_t clientId) {
     char windowTitle[100] = {0};
     windowTitle[0] = CMD_SET_WINDOW_TITLE;
     size_t titleLen = 1 + snprintWindowTitle(windowTitle + 1, 99);
+    AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer((uint8_t *) windowTitle, titleLen);
 
     if (clientId < 0) {
-        broadcastBufferToClients(reinterpret_cast<uint8_t *>(windowTitle), titleLen);
+        broadcastBufferToClients(wsBuffer);
     } else {
-        websocket->binary(clientId, windowTitle);
+        websocket->client(clientId)->binary(wsBuffer);
     }
 }
 
@@ -129,12 +130,14 @@ void TTY::removeClient(uint32_t clientId) {
     }
 }
 
-bool TTY::canHandleClient(uint32_t clientId) const {
+// Returns false if client cannot be handled
+bool TTY::onNewWebSocketClient(uint32_t clientId) {
     if (wsClientsLen >= WS_MAX_CLIENTS) {
         debugf("TTY too many clients (%d), refusing %d\r\n", wsClientsLen, clientId);
         // Won't accept more clients
         return false;
     }
+    pendingAuthClients++;
     return true;
 }
 
@@ -197,10 +200,20 @@ void TTY::handleWebSocketPong(uint32_t clientId) {
     clientSeen(clientId);
 }
 
-void TTY::broadcastBufferToClients(uint8_t *buf, size_t len) {
-    for (int i = 0; i < wsClientsLen; i++) {
-        uint32_t clientId = wsClients[i];
-        websocket->binary(clientId, buf, len);
+void TTY::broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer) {
+    if (areAllClientsAuthenticated()) {
+        // Fast no-copy path
+        websocket->binaryAll(wsBuffer);
+    } else {
+        wsBuffer->lock();
+        for (int i = 0; i < wsClientsLen; i++) {
+            AsyncWebSocketClient *client = websocket->client(wsClients[i]);
+            if (client->status() == WS_CONNECTED) {
+                client->binary(wsBuffer);
+            }
+        }
+        wsBuffer->unlock();
+        websocket->_cleanBuffers();
     }
 }
 
@@ -294,6 +307,10 @@ bool TTY::wsCanSend() {
     return true;
 }
 
+bool TTY::areAllClientsAuthenticated() const {
+    return pendingAuthClients == 0;
+}
+
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
         return;
@@ -324,51 +341,30 @@ void TTY::dispatchUart() {
         return;
     }
 
-    size_t bufsize = std::min(available + 512, (size_t) WS_SEND_BUF_SIZE);
-
-    // Buffer is placed in heap so that if all goes well we can only perform one copy and speed the process up
-    // significantly. We can free it later if the slow path is the only option.
-    //
-    // +1 for ttyd command, +1 for the null terminator AsyncWebSocket wants
-    char *buf = (char *) malloc((bufsize + 2) * sizeof(char));
+    // Use the WebSocket library buffer so we can use the "messageAll" fast path that doesn't incur in additional copies
+    // +1 for ttyd command
+    size_t bufsize = available + 1;
+    AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer(bufsize);
+    char *buf = (char *) wsBuffer->get();
 
     buf[0] = CMD_OUTPUT;
 
-    // Read directly into the buffer
-    uint8_t t1;
-    BENCH t1 = micros64();
+//    uint8_t t1;
+//    BENCH t1 = micros64();
 
-    size_t read = UART_COMM.readBytes(buf + 1, bufsize);
+    // Read directly into the buffer
+    size_t read = UART_COMM.readBytes(buf + 1, bufsize - 1);
 
     //BENCH UART_DEBUG.printf("READ %dB time %lld\n", read, micros64() - t1);
 
     if (read == 0) {
-        free(buf);
         return;
     }
 
-    read++;  // Take the command into account
-    buf = (char *) realloc(buf, (read + 1) * sizeof(char));  // Also take terminator into account
-
     requestLedBlink.leds.rx = true;
 
-    BENCH t1 = micros64();
+//    BENCH t1 = micros64();
 
-    // Use the no-copy websocket message to send to one single client
-    // Read first to avoid race conditions, then check if there's actually only one client
-    uint32_t singleClientId = wsClients[0];
-    if (wsClientsLen == 1) {
-        // Fast path is usable! The buffer will not be copied any further.
-        debugf("Sending through FAST path\r\n");
-        AsyncWebSocketMessage *message = new AsyncWebSocketBasicMessageNoCopy((const char *) buf, read + 1, WS_BINARY);
-        websocket->message(singleClientId, message);
-        // The buffer is not being freed on purpose since AsyncWebSocket will do it later
-    } else {
-        // We need to go the slow path - the buffer will end up being copied wsClientLen + 1 times
-        debugf("Sending through SLOW path\r\n");
-        broadcastBufferToClients((uint8_t *) buf, read + 1);
-        free(buf);
-    }
-
+    broadcastBufferToClients(wsBuffer);
     //BENCH UART_DEBUG.printf("WSEND %dB time %lld\n", read, micros64() - t1);
 };
