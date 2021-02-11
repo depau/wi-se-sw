@@ -32,8 +32,8 @@ const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 #define FLOW_CTL_SRC_LOCAL  0b01
 #define FLOW_CTL_SRC_REMOTE 0b10
 
-#define FLOW_CTL_STOP_CHAR 0x13
-#define FLOW_CTL_CONT_CHAR 0x11
+#define FLOW_CTL_XOFF 0x13
+#define FLOW_CTL_XON 0x11
 
 struct led_blink_request_t {
     bool rx;

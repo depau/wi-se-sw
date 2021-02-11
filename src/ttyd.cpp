@@ -17,6 +17,7 @@ void TTY::stty(uint32_t baudrate, uint8_t config) {
     debugf("TTY stty baud %d config %02X\r\n", baudrate, config);
 
     if (uartBegun) {
+        UART_COMM.flush();
         UART_COMM.end();
     }
 
@@ -235,7 +236,7 @@ void TTY::flowControlRequestStop(uint8_t source) {
         return;
     }
     if (flowControlStatus == 0) {
-        UART_COMM.write(FLOW_CTL_STOP_CHAR);
+        UART_COMM.write(FLOW_CTL_XOFF);
     }
     flowControlStatus |= source;
 }
@@ -249,7 +250,7 @@ void TTY::flowControlRequestResume(uint8_t source) {
     }
     flowControlStatus &= ~source;
     if (flowControlStatus == 0) {
-        UART_COMM.write(FLOW_CTL_CONT_CHAR);
+        UART_COMM.write(FLOW_CTL_XON);
     }
 }
 

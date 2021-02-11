@@ -38,6 +38,7 @@ void setup() {
     WiFi.mode(WIFI_MODE);
     WiFi.hostname(WIFI_HOSTNAME);
 
+    debugf("\r\n\r\n");
     if (WIFI_MODE == WIFI_STA) {
         debugf("Wi-Fi STA connecting\r\n");
 
