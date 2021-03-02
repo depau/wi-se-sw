@@ -288,6 +288,12 @@ void TTY::handleLedBlinkRequests() {
             }
         }
     }
+
+    if (wsFlowControlStopped || uartFlowControlStatus != 0) {
+        digitalWrite(LED_STATUS, HIGH);
+    } else {
+        digitalWrite(LED_STATUS, LOW);
+    }
 }
 
 void TTY::performHousekeeping() {
