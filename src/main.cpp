@@ -42,21 +42,22 @@ void setup() {
     if (WIFI_MODE == WIFI_STA) {
         debugf("Wi-Fi STA connecting\r\n");
 
-        // Blink Wi-Fi LED
-        analogWriteFreq(2);
-        analogWrite(LED_WIFI, 255);
-
         WiFi.setOutputPower(17.5);
         WiFi.setPhyMode(WIFI_PHY_MODE_11N);
         WiFi.setSleepMode(WIFI_NONE_SLEEP);
 
+        analogWriteRange(0xFF);
         WiFi.begin(WIFI_SSID, WIFI_PASS);
         while (WiFi.status() != WL_CONNECTED) {
-            delay(500);
+            for (int i = 0; i < 0xFF; i++) {
+                analogWrite(LED_WIFI, i);
+                delay(1);
+            }
+            for (int i = 0xFF; i >= 0; i--) {
+                analogWrite(LED_WIFI, i);
+                delay(1);
+            }
         }
-
-        analogWrite(LED_WIFI, 0);
-        analogWriteFreq(1000);
 
         debugf("Wi-Fi STA connected\r\n");
     } else {
