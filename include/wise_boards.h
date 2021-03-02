@@ -12,15 +12,15 @@
 
 #if BOARD_TYPE == BOARD_WI_SE_REWIRABLE_V01
 #define BOARD_NAME "Wi-Se Rewirable v0.1"
-#define LED_WIFI 14
-#define LED_STATUS 5
-#define LED_TX 3
-#define LED_RX 4
+#define LED_WIFI 5
+#define LED_STATUS 13
+#define LED_TX 14
+#define LED_RX 12
 #elif BOARD_TYPE == BOARD_WI_SE_RPI_V01 || BOARD_TYPE == BOARD_WI_SE_OPI4_V01
-#define LED_WIFI 14
-#define LED_STATUS 3
-#define LED_TX 5
-#define LED_RX 4
+#define LED_WIFI 5
+#define LED_STATUS 14
+#define LED_TX 13
+#define LED_RX 12
 #endif //BOARD_TYPE
 
 #if BOARD_TYPE == BOARD_CUSTOM
