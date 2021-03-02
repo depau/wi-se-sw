@@ -21,6 +21,9 @@
 // Defined as a string to be concatenated below
 #define CMD_SET_PREFERENCES "2"
 
+#define CMD_SERVER_PAUSE 'S'
+#define CMD_SERVER_RESUME 'Q'
+
 const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 
 #define LED_HANDLE_EVERY_MILLIS 5
@@ -77,7 +80,11 @@ private:
     union led_blink_schedule_u scheduledLedsOffMillis = {{0}};
     union led_blink_schedule_u ledsBusyUntilMillis = {{0}};
 
-    uint8_t flowControlStatus = 0;
+    uint8_t uartFlowControlStatus = 0;
+    // We won't take care of flow control commands coming from UART for the time being, it's O(n) but we don't have much
+    // time too waste. Also, chances are that it will be handled already by the remote terminal.
+    bool wsFlowControlStopped = false;
+    unsigned long wsFlowControlEngagedMillis = 0;
 
 public:
     explicit TTY(char *token, AsyncWebSocket *websocket) : token{token}, websocket{websocket} {}
@@ -142,15 +149,21 @@ private:
 
     void sendWindowTitle(int64_t clientId = -1);
 
-    void flowControlRequestStop(uint8_t source);
+    void flowControlUartRequestStop(uint8_t source);
 
-    void flowControlRequestResume(uint8_t source);
+    void flowControlUartRequestResume(uint8_t source);
 
     bool wsCanSend();
 
     bool areAllClientsAuthenticated() const;
 
     void broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer);
+
+    void flowControlWebSocketRequest(bool stop);
+
+    bool performFlowControl_SlowWiFi(size_t uartAvailable);
+
+    bool performFlowControl_HeapFull();
 };
 
 #endif //WI_SE_SW_TTYD_H

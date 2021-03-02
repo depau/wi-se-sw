@@ -153,7 +153,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
     bool isAuthToken = false;
     const char *authToken = nullptr;
 
-    debugf("TTY new message, client %d, command %c\r\n", clientId, command);
+    debugf("TTY new message, client %d, command %c, free heap %d\r\n", clientId, command, ESP.getFreeHeap());
 
     if (command == CMD_JSON_DATA) {
         DynamicJsonDocument doc(200);
@@ -188,9 +188,9 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
         UART_COMM.write((const char *) buf + 1, len - 1);
         requestLedBlink.leds.tx = true;
     } else if (command == CMD_PAUSE) {
-        flowControlRequestStop(FLOW_CTL_SRC_REMOTE);
+        flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
     } else if (command == CMD_RESUME) {
-        flowControlRequestResume(FLOW_CTL_SRC_REMOTE);
+        flowControlUartRequestResume(FLOW_CTL_SRC_REMOTE);
     }
     // Resize isn't implemented since... well... people in the 80's didn't expect they'd be resizing terminals 10 years
     // later
@@ -231,27 +231,37 @@ void TTY::checkClientTimeouts() {
     websocket->cleanupClients(WS_MAX_CLIENTS);
 }
 
-void TTY::flowControlRequestStop(uint8_t source) {
+void TTY::flowControlUartRequestStop(uint8_t source) {
     if (!UART_SW_FLOW_CONTROL) {
         return;
     }
-    if (flowControlStatus == 0) {
+    if (uartFlowControlStatus == 0) {
         UART_COMM.write(FLOW_CTL_XOFF);
     }
-    flowControlStatus |= source;
+    uartFlowControlStatus |= source;
 }
 
-void TTY::flowControlRequestResume(uint8_t source) {
+void TTY::flowControlUartRequestResume(uint8_t source) {
     if (!UART_SW_FLOW_CONTROL) {
         return;
     }
-    if (flowControlStatus == 0) {
+    if (uartFlowControlStatus == 0) {
         return;
     }
-    flowControlStatus &= ~source;
-    if (flowControlStatus == 0) {
+    uartFlowControlStatus &= ~source;
+    if (uartFlowControlStatus == 0) {
         UART_COMM.write(FLOW_CTL_XON);
     }
+}
+
+void TTY::flowControlWebSocketRequest(bool stop) {
+    if (wsFlowControlStopped == stop) {
+        return;
+    }
+    wsFlowControlStopped = stop;
+    AsyncWebSocketMessageBuffer *buffer = websocket->makeBuffer(1);
+    buffer->get()[0] = stop ? CMD_SERVER_PAUSE : CMD_SERVER_RESUME;
+    broadcastBufferToClients(buffer);
 }
 
 void TTY::pingClients() {
@@ -312,6 +322,37 @@ bool TTY::areAllClientsAuthenticated() const {
     return pendingAuthClients == 0;
 }
 
+// Trigger flow control (UART side) based on the UART buffer and WebSocket send queue status
+bool TTY::performFlowControl_SlowWiFi(size_t uartAvailable) {
+    bool canSend = wsCanSend();
+    if (uartAvailable > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !canSend) {
+        flowControlUartRequestStop(FLOW_CTL_SRC_LOCAL);
+    } else if (uartAvailable < UART_SW_FLOW_CONTROL_LOW_WATERMARK) {
+        flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL);
+    }
+    // Don't stop dispatching if the client requested it and UART is still sending.
+    // We've got 80K of RAM, the browser has more.
+    return uartFlowControlStatus && FLOW_CTL_SRC_LOCAL == FLOW_CTL_SRC_LOCAL;
+}
+
+// Trigger flow control (WebSocket side) if the heap is too full
+bool TTY::performFlowControl_HeapFull() {
+    if (wsFlowControlStopped) {
+        if (    // We blocked for too long, resume communication for at least one iteration
+                wsFlowControlEngagedMillis + HEAP_CAUSED_WS_FLOW_CTL_STOP_MAX_MS > millis() ||
+                // Heap is now workable
+                ESP.getFreeHeap() >= HEAP_FREE_HIGH_WATERMARK) {
+            flowControlWebSocketRequest(false);
+        }
+    } else {
+        if (ESP.getFreeHeap() <= HEAP_FREE_LOW_WATERMARK) {
+            flowControlWebSocketRequest(true);
+            wsFlowControlEngagedMillis = millis();
+        }
+    }
+    return wsFlowControlStopped;
+}
+
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
         return;
@@ -328,17 +369,10 @@ void TTY::dispatchUart() {
         available = UART_COMM.available();
     }
 
-    // Request flow stop/continue when the buffer is about to overflow
-    bool canSend = wsCanSend();
-    if (available > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !canSend) {
-        flowControlRequestStop(FLOW_CTL_SRC_LOCAL);
-    } else if (available < UART_SW_FLOW_CONTROL_LOW_WATERMARK) {
-        flowControlRequestResume(FLOW_CTL_SRC_LOCAL);
-    }
+    bool flowControlEngaged = performFlowControl_SlowWiFi(available) || performFlowControl_HeapFull();
 
-    // Don't bother sending if the WebSocket message queue is full, it will be dropped anyway and garble the terminal.
-    // We'll come back here at the next iteration.
-    if (!canSend) {
+    // Don't bother processing if flow control has engaged - wait a moment until the waters calm down
+    if (flowControlEngaged) {
         return;
     }
 

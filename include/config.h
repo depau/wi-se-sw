@@ -95,6 +95,13 @@
 #define WS_SEND_BUF_SIZE 1536
 #define WS_FRAGMENTED_DATA_BUFFER_SIZE 1536
 
+#define HEAP_FREE_LOW_WATERMARK 4096
+#define HEAP_FREE_HIGH_WATERMARK 10240
+
+// If we stopped for half a second and the heap is still stuffed like a turkey we might just as well crash instead of
+// continue waiting, this code is probably leaky AF anyway.
+#define HEAP_CAUSED_WS_FLOW_CTL_STOP_MAX_MS 500
+
 // End of configuration
 #include "wise_boards.h"
 
