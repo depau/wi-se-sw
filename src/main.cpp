@@ -83,7 +83,8 @@ void setup() {
         WiFi.softAP(WIFI_SSID, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
     }
 
-    digitalWrite(LED_WIFI, HIGH);
+    //digitalWrite(LED_WIFI, HIGH); // too bright
+    analogWrite(LED_WIFI, 40);
     digitalWrite(LED_STATUS, LOW);
 
     // Set-up Arduino OTA
