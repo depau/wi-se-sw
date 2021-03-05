@@ -80,7 +80,15 @@ void setup() {
         debugf("Wi-Fi STA connected\r\n");
     } else {
         debugf("Turning on soft AP\r\n");
-        WiFi.softAP(WIFI_SSID, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
+
+        char wifiSsid[30] = {0};
+        if (WIFI_SSID == nullptr) {
+            snprintf(wifiSsid, sizeof(wifiSsid), "Wi-Se_%04X", ESP.getChipId() & 0xFFFF);
+        } else {
+            strncpy(wifiSsid, WIFI_SSID, sizeof(wifiSsid));
+        }
+
+        WiFi.softAP(wifiSsid, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
     }
 
     //digitalWrite(LED_WIFI, HIGH); // too bright
