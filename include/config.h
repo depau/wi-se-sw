@@ -45,7 +45,7 @@
 // OTA updates
 #define OTA_ENABLE 1
 // You MUST define a password, otherwise OTA won't be enabled.
-#define OTA_PASSWORD "a"
+#define OTA_PASSWORD ""
 
 // Server configuration
 #define HTTP_LISTEN_PORT 80

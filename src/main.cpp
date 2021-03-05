@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
-#include <math.h>
 
 #include "config.h"
 #include "server.h"
@@ -161,6 +160,12 @@ void setup() {
 void loop() {
     if (otaRunning) {
         return yield();
+    }
+
+    if (WIFI_MODE == WIFI_STA && WiFi.status() != WL_CONNECTED) {
+        blinkError();
+        blinkError();
+        ESP.reset();
     }
 
     ttyd.dispatchUart();
