@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
+#include <ESP8266mDNS.h>
 
 #include "config.h"
 #include "server.h"
@@ -21,7 +22,7 @@ void blinkError() {
     digitalWrite(LED_RX, LOW);
     digitalWrite(LED_TX, LOW);
 
-    for (int i = 0; i <= 5; i++) {
+    for (int i = 0; i <= 10; i++) {
         digitalWrite(LED_RX, i % 2 == 0);
         digitalWrite(LED_TX, i % 2 != 0);
         delay(200);
@@ -99,50 +100,89 @@ void setup() {
     httpd.begin();
     debugf("HTTP server is up\r\n");
 
+    MDNS.begin(WIFI_HOSTNAME);
+
 #if OTA_ENABLE == 1
     if (OTA_PASSWORD[0] != '\0') {
         ArduinoOTA.setPassword(OTA_PASSWORD);
         ArduinoOTA.setRebootOnSuccess(true);
 
         ArduinoOTA.setHostname(WIFI_HOSTNAME);
+        ArduinoOTA.setPort(8266);
 
         ArduinoOTA.onStart([]() {
-            debugf("Shutting down for OTA");
             otaRunning = true;
+
+            debugf("Shutting down for OTA\r\n");
+            UART_DEBUG.flush();
+
+            delay(50);
 
             ttyd.shrinkBuffers();
             server.end();
             httpd.end();
 
-            // Blink all LEDs
+            // LED animation
             uint8_t leds[LED_COUNT] = LED_ORDER;
-            for (int i = 0; i <= 5; i++) {
-                uint8_t ledOn = i % 2 != 0;
-                for (uint8_t led : leds) {
-                    digitalWrite(led, ledOn);
+
+            for (int count = 0; count < 2; count++) {
+                for (int i = 0; i < 255; i++) {
+                    analogWrite(leds[LED_COUNT - 1], i);
+                    delayMicroseconds(400);
                 }
-                delay(200);
+                for (int led = LED_COUNT - 2; led >= 0; led--) {
+                    for (int i = 0; i < 255; i++) {
+                        analogWrite(leds[led], i);
+                        analogWrite(leds[led + 1], 255 - i);
+                        delayMicroseconds(400);
+                    }
+                    digitalWrite(leds[led], HIGH);
+                    digitalWrite(leds[led + 1], LOW);
+                }
+                for (int i = 255; i >= 0; i--) {
+                    analogWrite(leds[0], i);
+                    delayMicroseconds(400);
+                }
+            }
+
+            for (uint8_t led : leds) {
+                digitalWrite(led, LOW);
             }
         });
 
         ArduinoOTA.onProgress([](uint32_t progress, uint32_t total) {
             // Use LEDs as progress bar
             uint8_t leds[LED_COUNT] = LED_ORDER;
-            uint32_t ledThresh = total / LED_COUNT;
-            uint8_t curLed = _min(LED_COUNT, progress / ledThresh);
-            uint32_t ledProgress = map(progress % LED_COUNT, 0, ledThresh, 0, 255);
-            analogWrite(leds[curLed], ledProgress);
+            uint32_t ledThresh = total / LED_COUNT + 1;
+            uint8_t curLed = progress / ledThresh;
+            uint32_t ledProgress = map(progress % ledThresh, 0, ledThresh, 0, 255);
+
+            for (int led = 0; led < curLed; led++) {
+                digitalWrite(curLed, HIGH);
+            }
+            for (int led = curLed + 1; led < LED_COUNT; led++) {
+                digitalWrite(curLed, LOW);
+            }
+
+            if (curLed < LED_COUNT) {
+                analogWrite(leds[curLed], ledProgress);
+            }
         });
 
         ArduinoOTA.onEnd([]() {
-            // Animate all LEDs towards the blue one
-            uint8_t leds[LED_COUNT] = LED_ORDER;
+            debugf("OTA finished\r\n");
+            UART_DEBUG.flush();
 
-            for (int led = LED_COUNT - 1; led > 1; led--) {
-                for (int i = 255; i >= 0; i--) {
-                    analogWrite(led, i);
-                    delay(1);
-                }
+            uint8_t leds[LED_COUNT] = LED_ORDER;
+            digitalWrite(LED_WIFI, HIGH);
+            digitalWrite(LED_WIFI, HIGH);
+
+            if (LED_COUNT >= 3) {
+                digitalWrite(leds[LED_COUNT - 1], LOW);
+                delay(400);
+                digitalWrite(leds[LED_COUNT - 2], LOW);
+                delay(400);
+                digitalWrite(leds[LED_COUNT - 3], LOW);
             }
         });
 
@@ -152,18 +192,21 @@ void setup() {
             ESP.reset();
         });
 
-        ArduinoOTA.begin(false);
+        ArduinoOTA.begin();
+        debugf("OTA server is up\r\n");
     }
+
+    MDNS.addService("http", "tcp", 80);
 #endif
 }
 
 void loop() {
+    ArduinoOTA.handle();
     if (otaRunning) {
         return yield();
     }
 
     if (WIFI_MODE == WIFI_STA && WiFi.status() != WL_CONNECTED) {
-        blinkError();
         blinkError();
         ESP.reset();
     }
