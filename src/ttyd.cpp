@@ -10,6 +10,13 @@
 #include "server.h"
 #include "ttyd.h"
 
+
+void TTY::shrinkBuffers() {
+    UART_COMM.flush();
+    UART_COMM.setRxBufferSize(256);
+}
+
+
 void TTY::stty(uint32_t baudrate, uint8_t config) {
     this->uartBaudRate = baudrate;
     this->uartConfig = config;
@@ -408,4 +415,4 @@ void TTY::dispatchUart() {
 
     broadcastBufferToClients(wsBuffer);
     //BENCH UART_DEBUG.printf("WSEND %dB time %lld\n", read, micros64() - t1);
-};
+}

@@ -42,6 +42,11 @@
 #define WIFI_HIDE_SSID false
 #define WIFI_MAX_DEVICES 8
 
+// OTA updates
+#define OTA_ENABLE 1
+// You MUST define a password, otherwise OTA won't be enabled.
+#define OTA_PASSWORD "a"
+
 // Server configuration
 #define HTTP_LISTEN_PORT 80
 #define HTTP_AUTH_ENABLE false

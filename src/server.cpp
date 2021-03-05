@@ -49,6 +49,12 @@ void WiSeServer::begin() {
     debugf("Web app server is up\r\n");
 }
 
+
+void WiSeServer::end() const {
+    websocket->enable(false);
+    websocket->closeAll();
+}
+
 bool WiSeServer::checkHttpBasicAuth(AsyncWebServerRequest *request) {
     if (!HTTP_AUTH_ENABLE) {
         return true;

@@ -23,6 +23,14 @@
 #define LED_RX 12
 #endif //BOARD_TYPE
 
+#define LED_COUNT 4
+
+#if BOARD_TYPE == BOARD_WI_SE_RPI_V01
+#define LED_ORDER {LED_WIFI, LED_STATUS, LED_RX, LED_TX};
+#else
+#define LED_ORDER {LED_WIFI, LED_STATUS, LED_TX, LED_RX};
+#endif
+
 #if BOARD_TYPE == BOARD_CUSTOM
 #define BOARD_NAME "Generic ESP8266 board"
 #elif BOARD_TYPE == BOARD_WI_SE_RPI_V01

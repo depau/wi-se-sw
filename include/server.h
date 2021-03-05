@@ -56,6 +56,8 @@ public:
 
     void begin();
 
+    void end() const;
+
     static bool checkHttpBasicAuth(AsyncWebServerRequest *request);
 
     static void handleIndex(AsyncWebServerRequest *request);

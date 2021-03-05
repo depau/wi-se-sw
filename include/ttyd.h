@@ -111,6 +111,8 @@ public:
 
     void handleWebSocketPong(uint32_t clientId);
 
+    void shrinkBuffers();
+
 private:
 
     int findClientIndex(uint32_t clientId) {

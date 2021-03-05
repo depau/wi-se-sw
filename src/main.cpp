@@ -1,6 +1,7 @@
 #include <Arduino.h>
-//#include <ArduinoOTA.h>
+#include <ArduinoOTA.h>
 #include <ESP8266WiFi.h>
+#include <math.h>
 
 #include "config.h"
 #include "server.h"
@@ -12,6 +13,21 @@ AsyncWebSocket websocket = AsyncWebSocket("/ws");
 
 TTY ttyd(token, &websocket);
 WiSeServer server(token, &httpd, &websocket, &ttyd);
+
+bool otaRunning = false;
+
+void blinkError() {
+    digitalWrite(LED_WIFI, LOW);
+    digitalWrite(LED_STATUS, LOW);
+    digitalWrite(LED_RX, LOW);
+    digitalWrite(LED_TX, LOW);
+
+    for (int i = 0; i <= 5; i++) {
+        digitalWrite(LED_RX, i % 2 == 0);
+        digitalWrite(LED_TX, i % 2 != 0);
+        delay(200);
+    }
+}
 
 void setup() {
     // Init UART
@@ -83,9 +99,70 @@ void setup() {
     server.begin();
     httpd.begin();
     debugf("HTTP server is up\r\n");
+
+#if OTA_ENABLE == 1
+    if (OTA_PASSWORD[0] != '\0') {
+        ArduinoOTA.setPassword(OTA_PASSWORD);
+        ArduinoOTA.setRebootOnSuccess(true);
+
+        ArduinoOTA.setHostname(WIFI_HOSTNAME);
+
+        ArduinoOTA.onStart([]() {
+            debugf("Shutting down for OTA");
+            otaRunning = true;
+
+            ttyd.shrinkBuffers();
+            server.end();
+            httpd.end();
+
+            // Blink all LEDs
+            uint8_t leds[LED_COUNT] = LED_ORDER;
+            for (int i = 0; i <= 5; i++) {
+                uint8_t ledOn = i % 2 != 0;
+                for (uint8_t led : leds) {
+                    digitalWrite(led, ledOn);
+                }
+                delay(200);
+            }
+        });
+
+        ArduinoOTA.onProgress([](uint32_t progress, uint32_t total) {
+            // Use LEDs as progress bar
+            uint8_t leds[LED_COUNT] = LED_ORDER;
+            uint32_t ledThresh = total / LED_COUNT;
+            uint8_t curLed = _min(LED_COUNT, progress / ledThresh);
+            uint32_t ledProgress = map(progress % LED_COUNT, 0, ledThresh, 0, 255);
+            analogWrite(leds[curLed], ledProgress);
+        });
+
+        ArduinoOTA.onEnd([]() {
+            // Animate all LEDs towards the blue one
+            uint8_t leds[LED_COUNT] = LED_ORDER;
+
+            for (int led = LED_COUNT - 1; led > 1; led--) {
+                for (int i = 255; i >= 0; i--) {
+                    analogWrite(led, i);
+                    delay(1);
+                }
+            }
+        });
+
+        ArduinoOTA.onError([](ota_error_t _) {
+            // Blink red LEDs, then reset
+            blinkError();
+            ESP.reset();
+        });
+
+        ArduinoOTA.begin(false);
+    }
+#endif
 }
 
 void loop() {
+    if (otaRunning) {
+        return yield();
+    }
+
     ttyd.dispatchUart();
     yield();
     ttyd.performHousekeeping();
