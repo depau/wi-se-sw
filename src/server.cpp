@@ -5,11 +5,16 @@
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
+#include <ESP8266WiFi.h>
 
 #include "config.h"
 #include "html.h"
 #include "server.h"
 #include "debug.h"
+
+String toString(const IPAddress &address) {
+    return String() + address[0] + "." + address[1] + "." + address[2] + "." + address[3];
+}
 
 void WiSeServer::begin() {
     DefaultHeaders::Instance().addHeader("Server", serverHeader);
@@ -29,7 +34,48 @@ void WiSeServer::begin() {
               std::bind(&WiSeServer::handleSttyBody, this, std::placeholders::_1, std::placeholders::_2,
                         std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
     httpd->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkHttpBasicAuth(request)) return;
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
+    });
+    httpd->on("/whoami", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkHttpBasicAuth(request)) return;
+        AsyncResponseStream *response = request->beginResponseStream("application/json");
+
+        DynamicJsonDocument doc(2000);
+        doc["board"] = BOARD_NAME;
+        doc["hostname"] = WIFI_HOSTNAME;
+
+        JsonObject software = doc.createNestedObject("software");
+        software["implementation"] = F("Wi-Se C++");
+        software["version"] = VERSION;
+
+        JsonObject soc = doc.createNestedObject("soc");
+#ifdef ESP8266
+        soc["type"] = F("ESP8266");
+#else
+        soc["type"] = F("ESP32");
+#endif
+        soc["chipId"] = ESP.getChipId();
+        soc["sdk"] = ESP.getFullVersion();
+        soc["mhz"] = ESP.getCpuFreqMHz();
+
+        JsonObject health = doc.createNestedObject("health");
+        health["vccVoltage"] = ESP.getVcc() / 1000.0;
+        health["heapFree"] = ESP.getFreeHeap();
+        health["heapFrag"] = ESP.getHeapFragmentation();
+
+        JsonObject net = doc.createNestedObject("net");
+        net["wifiMode"] = WIFI_MODE == WIFI_STA ? "sta" : "softap";
+        net["ssid"] = WiFi.SSID();
+        net["bssid"] = WiFi.BSSIDstr();
+        net["macAddr"] = WiFi.macAddress();
+        net["ip"] = toString(WiFi.localIP());
+        net["netmask"] = toString(WiFi.subnetMask());
+        net["gateway"] = toString(WiFi.gatewayIP());
+        net["rssi"] = WiFi.RSSI();
+
+        serializeJson(doc, *response);
+        request->send(response);
     });
 
     // Handle CORS preflight

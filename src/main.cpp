@@ -7,6 +7,8 @@
 #include "server.h"
 #include "debug.h"
 
+ADC_MODE(ADC_VCC);
+
 char token[HTTP_AUTH_TOKEN_LEN + 1] = {0};
 AsyncWebServer httpd = AsyncWebServer(HTTP_LISTEN_PORT);
 AsyncWebSocket websocket = AsyncWebSocket("/ws");
