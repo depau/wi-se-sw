@@ -127,7 +127,8 @@ void TTY::removeClient(uint32_t clientId) {
         if (wsClients[i] == clientId) {
             found = true;
         }
-        if (found && i < wsClientsLen - 1) {
+
+        if (found && i < wsClientsLen - 1 && i < WS_MAX_CLIENTS - 1) {
             wsClients[i] = wsClients[i + 1];
             wsClientsLastSeen[i] = wsClientsLastSeen[i + 1];
         }
