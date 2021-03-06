@@ -33,6 +33,7 @@ void WiSeServer::begin() {
               nullptr,
               std::bind(&WiSeServer::handleSttyBody, this, std::placeholders::_1, std::placeholders::_2,
                         std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+    httpd->on("/stats", HTTP_GET, std::bind(&WiSeServer::handleStatsRequest, this, std::placeholders::_1));
     httpd->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
@@ -77,6 +78,7 @@ void WiSeServer::begin() {
         serializeJson(doc, *response);
         request->send(response);
     });
+
 
     // Handle CORS preflight
     httpd->onNotFound([](AsyncWebServerRequest *request) {
@@ -188,6 +190,18 @@ void invalidJsonBadRequest(AsyncWebServerRequest *request, const char *message) 
     AsyncResponseStream *response = request->beginResponseStream("text/plain");
     response->printf("Invalid input in JSON: %s", message);
     response->setCode(400);
+    request->send(response);
+}
+
+
+void WiSeServer::handleStatsRequest(AsyncWebServerRequest *request) const {
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument doc(200);
+    doc["tx"] = ttyd->getTotalTx();
+    doc["rx"] = ttyd->getTotalRx();
+    doc["txRateBps"] = ttyd->getTxRate();
+    doc["rxRateBps"] = ttyd->getRxRate();
+    serializeJson(doc, *response);
     request->send(response);
 }
 

@@ -193,6 +193,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
 
     if (command == CMD_INPUT) {
         UART_COMM.write((const char *) buf + 1, len - 1);
+        totalTx += len - 1;
         requestLedBlink.leds.tx = true;
     } else if (command == CMD_PAUSE) {
         flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
@@ -320,6 +321,10 @@ void TTY::performHousekeeping() {
         debugf("TTY handle ping\r\n");
         pingClients();
     }
+    if (lastStatsCollectMillis + COLLECT_STATS_EVERY_MILLIS < now) {
+        collectStats();
+        lastStatsCollectMillis = millis();
+    }
 }
 
 bool TTY::wsCanSend() {
@@ -366,6 +371,16 @@ bool TTY::performFlowControl_HeapFull() {
     return wsFlowControlStopped;
 }
 
+void TTY::collectStats() {
+    uint64_t now = millis();
+    uint64_t tx = totalTx - prevTx;
+    uint64_t rx = totalRx - prevRx;
+    txRate = tx * 8 * 1000 / (now - lastStatsCollectMillis);
+    rxRate = rx * 8 * 1000 / (now - lastStatsCollectMillis);
+    prevTx = totalTx;
+    prevRx = totalRx;
+}
+
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
         return;
@@ -402,6 +417,7 @@ void TTY::dispatchUart() {
 
     // Read directly into the buffer
     size_t read = UART_COMM.readBytes(buf + 1, bufsize - 1);
+    totalRx += available;
 
     //BENCH UART_DEBUG.printf("READ %dB time %lld\n", read, micros64() - t1);
 

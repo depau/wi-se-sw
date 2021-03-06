@@ -62,6 +62,8 @@ public:
 
     static void handleIndex(AsyncWebServerRequest *request);
 
+    void handleStatsRequest(AsyncWebServerRequest *request) const;
+
     void handleSttyRequest(AsyncWebServerRequest *request) const;
 
     void handleSttyBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const;

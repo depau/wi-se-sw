@@ -29,6 +29,7 @@ const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 #define LED_HANDLE_EVERY_MILLIS 5
 #define CLIENT_PING_EVERY_MILLIS (WS_PING_INTERVAL * 1000)
 #define CLIENT_TIMEOUT_CHECK_EVERY_MILLIS 10000
+#define COLLECT_STATS_EVERY_MILLIS 500
 
 #define CLIENT_TIMEOUT_MILLIS (WS_PING_INTERVAL * 1033)  // WS_PING_INTERVAL * 103.3% == ~310s with a default of 300s
 
@@ -86,6 +87,16 @@ private:
     bool wsFlowControlStopped = false;
     unsigned long wsFlowControlEngagedMillis = 0;
 
+    // Stats refer to the UART side
+    uint64_t lastStatsCollectMillis = millis();
+    uint64_t prevTx = 0;
+    uint64_t prevRx = 0;
+    uint64_t totalTx = 0;
+    uint64_t totalRx = 0;
+
+    uint64_t txRate = 0;
+    uint64_t rxRate = 0;
+
 public:
     explicit TTY(char *token, AsyncWebSocket *websocket) : token{token}, websocket{websocket} {}
 
@@ -96,6 +107,14 @@ public:
     uint8_t getUartConfig() const {
         return uartConfig;
     }
+
+    uint64_t getTotalRx() const { return totalRx; }
+
+    uint64_t getTotalTx() const { return totalTx; }
+
+    uint64_t getRxRate() const { return rxRate; }
+
+    uint64_t getTxRate() const { return txRate; }
 
     void stty(uint32_t baudrate, uint8_t config);
 
@@ -166,6 +185,8 @@ private:
     bool performFlowControl_SlowWiFi(size_t uartAvailable);
 
     bool performFlowControl_HeapFull();
+
+    void collectStats();
 };
 
 #endif //WI_SE_SW_TTYD_H
