@@ -32,9 +32,8 @@ enum WsCloseReason {
 class WiSeServer {
 private:
     // Use larger data type to be able to mark emptyness
-    uint64_t clientDataBufClientIds[WS_MAX_CLIENTS] = {WS_DATA_BUF_EMPTY_SENTINEL};
-    uint32_t clientDataBufLens[WS_MAX_CLIENTS] = {0};
-    uint8_t *clientDataBuffers[WS_MAX_CLIENTS] = {0};
+    uint64_t wsFragClientCommandCacheClientIds[WS_MAX_CLIENTS] = {WS_DATA_BUF_EMPTY_SENTINEL};
+    uint8_t wsFragClientCommandCache[WS_MAX_CLIENTS] = {0};
     char serverHeader[100] = {0};
 
 public:
@@ -78,33 +77,50 @@ public:
                      size_t len);
 
 private:
-    int findDataBufferForClient(uint32_t clientId) {
+    int findCommandCacheSlot(uint32_t clientId) {
         int firstEmpty = -1;
         for (int i = 0; i < WS_MAX_CLIENTS; i++) {
-            if (clientDataBufClientIds[i] == WS_DATA_BUF_EMPTY_SENTINEL && firstEmpty == -1) {
-                firstEmpty = i;
-            }
-            if (clientDataBufClientIds[i] == clientId) {
-                debugf("Found buffer for %d at pos %d\r\n", clientId, i);
+            if (wsFragClientCommandCacheClientIds[i] == clientId) {
                 return i;
             }
+            if (firstEmpty == -1 && wsFragClientCommandCacheClientIds[i] == WS_DATA_BUF_EMPTY_SENTINEL) {
+                firstEmpty = i;
+            }
         }
-        debugf("Allocating new buffer for %d at pos %d\r\n", clientId, firstEmpty);
-        clientDataBuffers[firstEmpty] = static_cast<uint8_t *>(malloc(WS_FRAGMENTED_DATA_BUFFER_SIZE));
-        clientDataBufClientIds[firstEmpty] = clientId;
+        if (firstEmpty == -1) {
+            debugf("Critical error, all client command caches full\r\n");
+            debugf("Client IDs of cached commands: ");
+            for(unsigned long long clientDataBufClientId : wsFragClientCommandCacheClientIds) {
+                debugf("%llu ", clientDataBufClientId);
+            }
+            debugf("\r\n");
+            panic();
+        }
         return firstEmpty;
     }
 
-    void deallocClientDataBuffer(uint32_t clientId) {
-        for (int i = 0; i < WS_MAX_CLIENTS; i++) {
-            if (clientDataBufClientIds[i] == clientId) {
-                debugf("Freeing buffer for %d at pos %d, pointer is %p\r\n", clientId, i, clientDataBuffers[i]);
-                free(clientDataBuffers[clientId]);
-                clientDataBuffers[i] = nullptr;
-                clientDataBufClientIds[i] = WS_DATA_BUF_EMPTY_SENTINEL;
-                break;
-            }
+    char getCachedCommand(uint32_t clientId) {
+        int slot = findCommandCacheSlot(clientId);
+        if (wsFragClientCommandCacheClientIds[slot] != clientId) {
+            debugf("Warning, tried to retrieve command cache for %d but never set!\r\n", clientId);
+            return 0;
         }
+        return wsFragClientCommandCache[slot];
+    }
+
+    void storeCommandCache(uint32_t clientId, char command) {
+        int slot = findCommandCacheSlot(clientId);
+        wsFragClientCommandCacheClientIds[slot] = clientId;
+        wsFragClientCommandCache[slot] = command;
+    }
+
+    void deleteCachedCommand(uint32_t clientId) {
+        int slot = findCommandCacheSlot(clientId);
+        if (wsFragClientCommandCacheClientIds[slot] != clientId) {
+            return;
+        }
+        wsFragClientCommandCacheClientIds[slot] = WS_DATA_BUF_EMPTY_SENTINEL;
+        wsFragClientCommandCache[slot] = 0;
     }
 };
 

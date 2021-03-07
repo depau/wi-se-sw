@@ -156,12 +156,18 @@ void TTY::nukeClient(uint32_t clientId, uint16_t closeReason) {
     websocket->close(clientId, closeReason);
 }
 
-void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t len) {
+void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t len, char fragmentCachedCommand) {
     char command = buf[0];
     bool isAuthToken = false;
     const char *authToken = nullptr;
 
-    debugf("TTY new message, client %d, command %c, free heap %d\r\n", clientId, command, ESP.getFreeHeap());
+    debugf("TTY new message, client %d, command %c, cached command %c free heap %d\r\n", clientId, command,
+           fragmentCachedCommand, ESP.getFreeHeap());
+
+    if (fragmentCachedCommand != 0 && fragmentCachedCommand != CMD_INPUT) {
+        // Do not accept fragmented data unless it's terminal data
+        return nukeClient(clientId, WS_CLOSE_BAD_CONDITION);
+    }
 
     if (command == CMD_JSON_DATA) {
         DynamicJsonDocument doc(200);
@@ -192,17 +198,32 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
 
     clientSeen(clientId);
 
-    if (command == CMD_INPUT) {
-        UART_COMM.write((const uint8_t *) buf + 1, len - 1);
-        totalTx += len - 1;
-        requestLedBlink.leds.tx = true;
-    } else if (command == CMD_PAUSE) {
-        flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
-    } else if (command == CMD_RESUME) {
-        flowControlUartRequestResume(FLOW_CTL_SRC_REMOTE);
+    const uint8_t *inputDataBuf;
+    size_t inputLen;
+    if (fragmentCachedCommand == CMD_INPUT) {
+        command = fragmentCachedCommand;
+        inputDataBuf = buf;
+        inputLen = len;
+    } else {
+        inputDataBuf = buf + 1;
+        inputLen = len - 1;
     }
-    // Resize isn't implemented since... well... people in the 80's didn't expect they'd be resizing terminals 10 years
-    // later
+
+    switch (command) {
+        case CMD_INPUT:
+            UART_COMM.write((const uint8_t *) inputDataBuf, inputLen);
+            totalTx += len - 1;
+            requestLedBlink.leds.tx = true;
+            break;
+        case CMD_PAUSE:
+            flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
+            break;
+        case CMD_RESUME:
+            flowControlUartRequestResume(FLOW_CTL_SRC_REMOTE);
+            break;
+        default:;
+    }
+    // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021
 }
 
 void TTY::handleWebSocketPong(uint32_t clientId) {
@@ -346,7 +367,8 @@ bool TTY::areAllClientsAuthenticated() const {
 bool TTY::performFlowControl_SlowWiFi(size_t uartAvailable) {
     bool canSend = wsCanSend();
     if (uartAvailable > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !canSend) {
-        debugf("Uart available: %d, watermark %d, can send? %d\r\n", uartAvailable, UART_SW_FLOW_CONTROL_HIGH_WATERMARK, canSend);
+        debugf("Uart available: %d, watermark %d, can send? %d\r\n", uartAvailable, UART_SW_FLOW_CONTROL_HIGH_WATERMARK,
+               canSend);
         flowControlUartRequestStop(FLOW_CTL_SRC_LOCAL);
     } else if (uartAvailable < UART_SW_FLOW_CONTROL_LOW_WATERMARK) {
         flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL);

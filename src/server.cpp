@@ -313,9 +313,7 @@ WiSeServer::handleSttyBody(
 void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg,
                                   uint8_t *data, size_t len) {
     AwsFrameInfo *info = nullptr;
-    uint8_t *buffer = nullptr;
-    size_t *buf_len = nullptr;
-    bool shouldDispatchMessage = false;
+    char cachedCommand;
 
     switch (type) {
         case WS_EVT_CONNECT:
@@ -330,7 +328,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
             ttyd->removeClient(client->id());
             websocket->cleanupClients(WS_MAX_CLIENTS);
             debugf("DEALLOC CASE DISCONNECT client ID %d\r\n", client->id());
-            deallocClientDataBuffer(client->id());
+            deleteCachedCommand(client->id());
             break;
         case WS_EVT_ERROR:
             debugf("WS client error [%u] error(%u): %s\r\n", client->id(), *((uint16_t *) arg), (char *) data);
@@ -346,48 +344,28 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
             break;
         case WS_EVT_DATA:
             info = (AwsFrameInfo *) arg;
-            shouldDispatchMessage = false;
 
             if (info->final && info->index == 0 && info->len == len) {
                 // Entire message in one frame
-                debugf("WS client data no-frag final %d, len %d\r\n", client->id(), len);
-                buffer = data;
-                buf_len = &len;
-                shouldDispatchMessage = true;
+                debugf("WS client data FINAL INDEX 0 final %d, len %d\r\n", client->id(), len);
+                ttyd->handleWebSocketMessage(client->id(), data, len);
             } else {
                 // Message is split into multiple frames or frame is fragmented
-                debugf("WS client data frag %d, index %llu len %d\r\n", client->id(), info->index, len);
-                int pos = findDataBufferForClient(client->id());
-                buffer = clientDataBuffers[pos];
-                buf_len = reinterpret_cast<size_t *>(&clientDataBufLens[pos]);
+                debugf("WS client data FRAGMENTED %d, index %llu len %d\r\n", client->id(), info->index, len);
 
-                if (*buf_len + len > WS_FRAGMENTED_DATA_BUFFER_SIZE) {
-                    debugf("WS client nuke due to buffer overflow %d\r\n", client->id());
-                    ttyd->removeClient(client->id());
-                    websocket->close(WS_CLOSE_BAD_CONDITION);
-                    websocket->cleanupClients(WS_MAX_CLIENTS);
-                    debugf("DEALLOC CASE CLIENT INDUCED BUF OVERFLOW client ID %d\r\n", client->id());
-                    deallocClientDataBuffer(client->id());
-                    break;
+                if (info->index == 0) {
+                    // Cache command
+                    cachedCommand = 0;
+                    storeCommandCache(client->id(), data[0]);
+                } else {
+                    cachedCommand = getCachedCommand(client->id());
                 }
+                ttyd->handleWebSocketMessage(client->id(), data, len, cachedCommand);
 
-                uint8_t *tmpBuffer = buffer + *buf_len;
-                memcpy(tmpBuffer, data, len);
-                *buf_len += len;
-
-                if (info->final) {
-                    shouldDispatchMessage = true;
+                if (info->index + len >= info->len) {
+                    deleteCachedCommand(client->id());
                 }
             }
-
             break;
-        default:;
-    }
-
-    if (shouldDispatchMessage) {
-        debugf("WS client data dispatch %d, len %d\r\n", client->id(), *buf_len);
-        ttyd->handleWebSocketMessage(client->id(), buffer, *buf_len);
-        debugf("DEALLOC CASE DISPATCH client ID %d\r\n", client->id());
-        deallocClientDataBuffer(client->id());
     }
 }

@@ -122,7 +122,7 @@ public:
 
     void removeClient(uint32_t clientId);
 
-    void handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t len);
+    void handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t len, char fragmentCachedCommand = 0);
 
     void dispatchUart();
 
