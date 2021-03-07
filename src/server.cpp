@@ -359,7 +359,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
                 debugf("WS client data frag %d, index %llu len %d\r\n", client->id(), info->index, len);
                 int pos = findDataBufferForClient(client->id());
                 buffer = clientDataBuffers[pos];
-                buf_len = &clientDataBufLens[pos];
+                buf_len = reinterpret_cast<size_t *>(&clientDataBufLens[pos]);
 
                 if (*buf_len + len > WS_FRAGMENTED_DATA_BUFFER_SIZE) {
                     debugf("WS client nuke due to buffer overflow %d\r\n", client->id());

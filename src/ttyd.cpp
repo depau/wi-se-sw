@@ -193,7 +193,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
     clientSeen(clientId);
 
     if (command == CMD_INPUT) {
-        UART_COMM.write((const char *) buf + 1, len - 1);
+        UART_COMM.write((const uint8_t *) buf + 1, len - 1);
         totalTx += len - 1;
         requestLedBlink.leds.tx = true;
     } else if (command == CMD_PAUSE) {
@@ -330,7 +330,8 @@ void TTY::performHousekeeping() {
 
 bool TTY::wsCanSend() {
     for (int i = 0; i < wsClientsLen; i++) {
-        if (websocket->client(wsClients[i])->queueIsFull()) {
+        AsyncWebSocketClient *client = websocket->client(wsClients[i]);
+        if (client->status() == WS_CONNECTED && client->queueIsFull()) {
             return false;
         }
     }
@@ -345,6 +346,7 @@ bool TTY::areAllClientsAuthenticated() const {
 bool TTY::performFlowControl_SlowWiFi(size_t uartAvailable) {
     bool canSend = wsCanSend();
     if (uartAvailable > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !canSend) {
+        debugf("Uart available: %d, watermark %d, can send? %d\r\n", uartAvailable, UART_SW_FLOW_CONTROL_HIGH_WATERMARK, canSend);
         flowControlUartRequestStop(FLOW_CTL_SRC_LOCAL);
     } else if (uartAvailable < UART_SW_FLOW_CONTROL_LOW_WATERMARK) {
         flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL);
@@ -384,8 +386,12 @@ void TTY::collectStats() {
 
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
+        // Unlock all flow control
+        flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL | FLOW_CTL_SRC_REMOTE);
+        wsFlowControlStopped = false; // No clients connected, so we just set the flag.
         return;
     }
+
     size_t available = UART_COMM.available();
     if (!available) {
         return;
@@ -398,10 +404,12 @@ void TTY::dispatchUart() {
         available = UART_COMM.available();
     }
 
-    bool flowControlEngaged = performFlowControl_SlowWiFi(available) || performFlowControl_HeapFull();
+    performFlowControl_SlowWiFi(available);
 
-    // Don't bother processing if flow control has engaged - wait a moment until the waters calm down
-    if (flowControlEngaged) {
+    bool shouldContinueDispatching = wsCanSend() && !performFlowControl_HeapFull();
+
+    // Don't process if flow control was engaged due to low heap or if the WebSocket library can't handle our input.
+    if (!shouldContinueDispatching) {
         return;
     }
 
@@ -415,10 +423,11 @@ void TTY::dispatchUart() {
 
 //    uint8_t t1;
 //    BENCH t1 = micros64();
+    BENCH debugf("Sending %d B to %d clients\r\n", bufsize, wsClientsLen);
 
     // Read directly into the buffer
     size_t read = UART_COMM.readBytes(buf + 1, bufsize - 1);
-    totalRx += available;
+    totalRx += read;
 
     //BENCH UART_DEBUG.printf("READ %dB time %lld\n", read, micros64() - t1);
 
