@@ -325,6 +325,9 @@ void AsyncClient::onDelayCB() {
             case ECONNRESET:
                 sockState = 0;
                 return _s_error(this, ERR_RST);
+            case EBADF:
+                sockState = 0;
+                return _s_error(this, ERR_ABRT);
         }
         perror("Failed to read from socket");
         panic();
