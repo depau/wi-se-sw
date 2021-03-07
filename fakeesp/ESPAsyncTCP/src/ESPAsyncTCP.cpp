@@ -248,6 +248,10 @@ size_t AsyncClient::add(const char *data, size_t size, uint8_t apiflags) {
     if (sent == -1) {
         if (errno == EWOULDBLOCK) {
             return 0;  // Send later
+        } else if (errno == ECONNRESET) {
+            sockState = 0;
+            _s_error(this, ERR_RST);
+            return 0;
         } else {
             perror("Failed sending to socket");
             return 0;
@@ -316,9 +320,9 @@ void AsyncClient::onDelayCB() {
         _sent(_errorTracker, nullptr, sentTemp);
     }
 
-    char buf[1000];
-    ssize_t recvd = ::recv(sock_fd, buf, 1000, 0);
-    if (recvd == -1) {
+    char buf[2000];
+    ssize_t recvd = ::recv(sock_fd, buf, sizeof(buf), 0);
+    if (recvd < 0) {
         switch (errno) {
             case EWOULDBLOCK:
                 return;
@@ -335,6 +339,10 @@ void AsyncClient::onDelayCB() {
         // Socket closed
         sockState = 0;
         return _s_error(this, ERR_CLSD);
+    } else if (recvd > sizeof(buf)) {
+        fprintf(stderr, "received %zd bytes, sounds weird\n", recvd);
+        perror("Linux is broken");
+        return _s_error(this, ERR_IF);
     }
 
     if (fakePollLastSentMillis + 100 < millis()) {
@@ -443,7 +451,6 @@ bool AsyncClient::getNoDelay() {
 }
 
 uint16_t AsyncClient::getMss() {
-    fprintf(stderr, "STUB getMss()\n");
     return 1460;
 }
 
