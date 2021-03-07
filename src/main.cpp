@@ -10,11 +10,12 @@
 ADC_MODE(ADC_VCC);
 
 char token[HTTP_AUTH_TOKEN_LEN + 1] = {0};
-AsyncWebServer httpd = AsyncWebServer(HTTP_LISTEN_PORT);
-AsyncWebSocket websocket = AsyncWebSocket("/ws");
 
-TTY ttyd(token, &websocket);
-WiSeServer server(token, &httpd, &websocket, &ttyd);
+AsyncWebServer *httpd;
+AsyncWebSocket *websocket;
+
+TTY *ttyd;
+WiSeServer *server;
 
 bool otaRunning = false;
 
@@ -32,8 +33,21 @@ void blinkError() {
 }
 
 void setup() {
+    // Generate token
+    if (HTTP_AUTH_ENABLE) {
+        const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
+        for (int i; i < HTTP_AUTH_TOKEN_LEN; i++) {
+            token[i] = charset[ESP.random() % (int) (sizeof charset - 1)];
+        }
+    }
+
+    httpd = new AsyncWebServer(HTTP_LISTEN_PORT);
+    websocket = new AsyncWebSocket("/ws");
+    ttyd = new TTY(token, websocket);
+    server = new WiSeServer(token, httpd, websocket, ttyd);
+
     // Init UART
-    ttyd.stty(UART_COMM_BAUD, UART_COMM_CONFIG);
+    ttyd->stty(UART_COMM_BAUD, UART_COMM_CONFIG);
 
 #if ENABLE_DEBUG == 1
     if (UART_COMM != UART_DEBUG) {
@@ -99,16 +113,9 @@ void setup() {
     // TODO: actually do it
     // ArduinoOTA.setHostname(WIFI_HOSTNAME);
 
-    // Generate token
-    if (HTTP_AUTH_ENABLE) {
-        const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
-        for (int i; i < HTTP_AUTH_TOKEN_LEN; i++) {
-            token[i] = charset[ESP.random() % (int) (sizeof charset - 1)];
-        }
-    }
 
-    server.begin();
-    httpd.begin();
+    server->begin();
+    httpd->begin();
     debugf("HTTP server is up\r\n");
 
     MDNS.begin(WIFI_HOSTNAME);
@@ -129,9 +136,9 @@ void setup() {
 
             delay(50);
 
-            ttyd.shrinkBuffers();
-            server.end();
-            httpd.end();
+            ttyd->shrinkBuffers();
+            server->end();
+            httpd->end();
 
             // LED animation
             uint8_t leds[LED_COUNT] = LED_ORDER;
@@ -222,8 +229,8 @@ void loop() {
         ESP.reset();
     }
 
-    ttyd.dispatchUart();
+    ttyd->dispatchUart();
     yield();
-    ttyd.performHousekeeping();
+    ttyd->performHousekeeping();
     yield();
 }
