@@ -126,6 +126,7 @@ void TTY::removeClient(uint32_t clientId) {
     for (int i = 0; i < wsClientsLen; i++) {
         if (wsClients[i] == clientId) {
             found = true;
+            wsClients[i] = -1;
         }
 
         if (found && i < wsClientsLen - 1 && i < WS_MAX_CLIENTS - 1) {
@@ -221,9 +222,14 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
         case CMD_RESUME:
             flowControlUartRequestResume(FLOW_CTL_SRC_REMOTE);
             break;
-        default:;
+        case CMD_JSON_DATA:
+        case CMD_RESIZE_TERMINAL:
+            // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021
+            break;
+        default:
+            debugf("Nuking client due to invalid data\r\n");
+            nukeClient(clientId, WS_CLOSE_BAD_DATA);
     }
-    // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021
 }
 
 void TTY::handleWebSocketPong(uint32_t clientId) {
