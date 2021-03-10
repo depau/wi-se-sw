@@ -13,7 +13,7 @@
 #define MASK_UART_BITS    0B00001100
 #define MASK_UART_STOP    0B00110000
 
-#define WS_DATA_BUF_EMPTY_SENTINEL 0xFFFFFFFFFFFFFFFF
+#define WS_CMD_CACHE_EMPTY_SENTINEL 0xFFFFFFFFFFFFFFFF
 
 #define HTTP_AUTH_TOKEN_LEN 16
 
@@ -32,7 +32,7 @@ enum WsCloseReason {
 class WiSeServer {
 private:
     // Use larger data type to be able to mark emptyness
-    uint64_t wsFragClientCommandCacheClientIds[WS_MAX_CLIENTS] = {WS_DATA_BUF_EMPTY_SENTINEL};
+    uint64_t wsFragClientCommandCacheClientIds[WS_MAX_CLIENTS] = {WS_CMD_CACHE_EMPTY_SENTINEL};
     uint8_t wsFragClientCommandCache[WS_MAX_CLIENTS] = {0};
     char serverHeader[100] = {0};
 
@@ -77,15 +77,33 @@ public:
                      size_t len);
 
 private:
-    int findCommandCacheSlot(uint32_t clientId) {
+    bool garbageCollectCommandCache() {
+        bool foundGarbage = false;
+        for (unsigned long long clientId : wsFragClientCommandCacheClientIds) {
+            if (clientId == WS_CMD_CACHE_EMPTY_SENTINEL) {
+                continue;
+            }
+            if (ttyd->isClientBlocked(clientId) || !ttyd->isClientAuthenticated(clientId)) {
+                foundGarbage = true;
+                deleteCachedCommand(clientId);
+            }
+        }
+        return foundGarbage;
+    }
+
+    int findCommandCacheSlot(uint32_t clientId, bool doGc = true) {
         int firstEmpty = -1;
         for (int i = 0; i < WS_MAX_CLIENTS; i++) {
             if (wsFragClientCommandCacheClientIds[i] == clientId) {
                 return i;
             }
-            if (firstEmpty == -1 && wsFragClientCommandCacheClientIds[i] == WS_DATA_BUF_EMPTY_SENTINEL) {
+            if (firstEmpty == -1 && wsFragClientCommandCacheClientIds[i] == WS_CMD_CACHE_EMPTY_SENTINEL) {
                 firstEmpty = i;
             }
+        }
+
+        if (firstEmpty == -1 && doGc && garbageCollectCommandCache()) {
+            return findCommandCacheSlot(clientId, false);
         }
         if (firstEmpty == -1) {
             debugf("Critical error, all client command caches full\r\n");
@@ -96,6 +114,7 @@ private:
             debugf("\r\n");
             panic();
         }
+
         return firstEmpty;
     }
 
@@ -116,10 +135,7 @@ private:
 
     void deleteCachedCommand(uint32_t clientId) {
         int slot = findCommandCacheSlot(clientId);
-        if (wsFragClientCommandCacheClientIds[slot] != clientId) {
-            return;
-        }
-        wsFragClientCommandCacheClientIds[slot] = WS_DATA_BUF_EMPTY_SENTINEL;
+        wsFragClientCommandCacheClientIds[slot] = WS_CMD_CACHE_EMPTY_SENTINEL;
         wsFragClientCommandCache[slot] = 0;
     }
 };
