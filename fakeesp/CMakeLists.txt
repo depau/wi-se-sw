@@ -3,6 +3,11 @@ cmake_minimum_required(VERSION 3.13)
 
 project("wi-se-sw" CXX)
 
+add_compile_options(
+        "-Wall" "-Wpedantic" "-Wextra" "-fno-exceptions" "-Wno-unused-parameter"
+        "$<$<CONFIG:DEBUG>:-O0;-g3;-ggdb;-fno-stack-protector>"
+)
+
 add_definitions(-D'PLATFORMIO=50004')
 add_definitions(-D'ESP8266')
 add_definitions(-D'ARDUINO_ARCH_ESP8266')
