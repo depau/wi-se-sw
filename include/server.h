@@ -108,7 +108,7 @@ private:
         if (firstEmpty == -1) {
             debugf("Critical error, all client command caches full\r\n");
             debugf("Client IDs of cached commands: ");
-            for(unsigned long long clientDataBufClientId : wsFragClientCommandCacheClientIds) {
+            for(__unused unsigned long long clientDataBufClientId : wsFragClientCommandCacheClientIds) {
                 debugf("%llu ", clientDataBufClientId);
             }
             debugf("\r\n");
