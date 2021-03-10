@@ -204,7 +204,21 @@ void setup() {
             }
         });
 
-        ArduinoOTA.onError([](ota_error_t _) {
+        ArduinoOTA.onError([](ota_error_t err) {
+            debugf("OTA error: ");
+            switch (err) {
+                case OTA_AUTH_ERROR:
+                    debugf("AUTH\r\n"); break;
+                case OTA_BEGIN_ERROR:
+                    debugf("BEGIN\r\n"); break;
+                case OTA_CONNECT_ERROR:
+                    debugf("CONNECT\r\n"); break;
+                case OTA_RECEIVE_ERROR:
+                    debugf("RECEIVE\r\n"); break;
+                case OTA_END_ERROR:
+                    debugf("END\r\n"); break;
+            }
+
             // Blink red LEDs, then reset
             blinkError();
             ESP.reset();
