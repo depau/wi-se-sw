@@ -188,7 +188,7 @@ void setup() {
         });
 
         ArduinoOTA.onEnd([]() {
-            debugf("OTA finished\r\n");
+            debugf("OTA finished\r\nPlease wait for the atomic firmware copy\r\n");
             UART_DEBUG.flush();
 
             uint8_t leds[LED_COUNT] = LED_ORDER;
