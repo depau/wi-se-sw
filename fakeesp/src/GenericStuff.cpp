@@ -9,6 +9,8 @@
 #include "Arduino.h"
 
 void panic() {
+    fflush(stderr);
+    fflush(stdout);
     exit(1);
 }
 
