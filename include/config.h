@@ -38,6 +38,8 @@
 #define WIFI_PASS "changemeASAP"
 #define WIFI_HOSTNAME "Wi_Se"
 
+#define DEVICE_PRETTY_NAME "Wi-Se"
+
 // Access Point configuration
 #define WIFI_CHANNEL 6
 #define WIFI_HIDE_SSID false

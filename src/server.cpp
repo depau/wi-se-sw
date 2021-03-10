@@ -108,7 +108,7 @@ bool WiSeServer::checkHttpBasicAuth(AsyncWebServerRequest *request) {
         return true;
     }
     if (!request->authenticate(HTTP_AUTH_USER, HTTP_AUTH_PASS)) {
-        request->requestAuthentication();
+        request->requestAuthentication(DEVICE_PRETTY_NAME);
         return false;
     }
     return true;
