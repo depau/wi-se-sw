@@ -53,8 +53,8 @@ FILE(GLOB_RECURSE SRC_LIST
 
 list(APPEND SRC_LIST)
 
-message(STATUS "SRC_LIST: ${SRC_LIST}")
-message(STATUS "HOME: $ENV{HOME}")
+#message(STATUS "SRC_LIST: ${SRC_LIST}")
+#message(STATUS "HOME: $ENV{HOME}")
 
 add_executable(wi-se_fakeesp main.cpp ${SRC_LIST})
 
