@@ -315,6 +315,11 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
     AwsFrameInfo *info = nullptr;
     char cachedCommand;
 
+    if (ttyd->isClientBlocked(client->id())) {
+        debugf("WS blocked client %d sent data!\r\n", client->id());
+        return;
+    }
+
     switch (type) {
         case WS_EVT_CONNECT:
             debugf("WS new client %d\r\n", client->id());
@@ -343,15 +348,20 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
             ttyd->handleWebSocketPong(client->id());
             break;
         case WS_EVT_DATA:
+            if (client->status() != WS_CONNECTED) {
+                debugf("WS received data from not-connected client %d\r\n", client->id());
+                return;
+            }
+
             info = (AwsFrameInfo *) arg;
 
             if (info->final && info->index == 0 && info->len == len) {
                 // Entire message in one frame
-                debugf("WS client data FINAL INDEX 0 final %d, len %d\r\n", client->id(), len);
+                debugf("\r\nWS client data FINAL INDEX 0 final %d, len %d\r\n", client->id(), len);
                 ttyd->handleWebSocketMessage(client->id(), data, len);
             } else {
                 // Message is split into multiple frames or frame is fragmented
-                debugf("WS client data FRAGMENTED %d, index %llu len %d\r\n", client->id(), info->index, len);
+                debugf("\r\nWS client data FRAGMENTED %d, index %llu len %d\r\n", client->id(), info->index, len);
 
                 if (info->index == 0) {
                     // Cache command

@@ -123,6 +123,8 @@ void TTY::removeClient(uint32_t clientId) {
     debugf("TTY remove client %d\r\n", clientId);
     bool found = false;
 
+    blockClient(clientId);
+
     for (int i = 0; i < wsClientsLen; i++) {
         if (wsClients[i] == clientId) {
             found = true;
@@ -138,6 +140,50 @@ void TTY::removeClient(uint32_t clientId) {
     if (found) {
         wsClientsLen--;
     }
+}
+
+void TTY::blockClient(uint32_t clientId) {
+    debugf("TTY client blocked: %d\r\n", clientId);
+    wsBlockedClients[wsBlockedClientsLen++] = clientId;
+    wsClientBlockedAtMillis[wsBlockedClientsLen - 1] = millis();
+}
+
+void TTY::removeExpiredClientBlocks() {
+    uint64_t now = millis();
+    // Iterate backwards and clear out as many expired items from the end
+    for (int i = wsBlockedClientsLen - 1; i >= 0; i--) {
+        if (wsClientBlockedAtMillis[i] != 0 && wsClientBlockedAtMillis[i] + WS_CLIENT_BLOCK_EXPIRE_MILLIS < now) {
+            debugf("TTY Client unblocked: %d\r\n", wsBlockedClients[i]);
+            wsBlockedClients[i] = 0;
+            wsClientBlockedAtMillis[i] = 0;
+            if (i >= wsBlockedClientsLen - 1) {
+                wsBlockedClientsLen--;
+            }
+        }
+    }
+    // Iterate forward and fill any holes with items from the end
+    for (int i = 0; i < wsBlockedClientsLen; i++) {
+        if (wsClientBlockedAtMillis[i] == 0) {
+            wsBlockedClients[i] = wsBlockedClients[wsBlockedClientsLen-1];
+            wsClientBlockedAtMillis[i] = wsClientBlockedAtMillis[wsBlockedClientsLen-1];
+            wsBlockedClients[wsBlockedClientsLen-1] = 0;
+            wsClientBlockedAtMillis[wsBlockedClientsLen-1] = 0;
+            wsBlockedClientsLen--;
+        }
+        while (wsBlockedClientsLen > 0 && wsClientBlockedAtMillis[wsBlockedClientsLen-1] == 0) {
+            wsBlockedClientsLen--;
+        }
+    }
+}
+
+bool TTY::isClientBlocked(uint32_t clientId) {
+    removeExpiredClientBlocks();
+    for (int i=0; i < wsBlockedClientsLen; i++) {
+        if (wsBlockedClients[i] == clientId) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Returns false if client cannot be handled
@@ -227,8 +273,8 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021
             break;
         default:
-            debugf("Nuking client due to invalid data\r\n");
-            nukeClient(clientId, WS_CLOSE_BAD_DATA);
+            debugf("Ignoring client invalid data, len %zu first char %c\r\n", len, buf[0]);
+            //nukeClient(clientId, WS_CLOSE_BAD_DATA);
     }
 }
 

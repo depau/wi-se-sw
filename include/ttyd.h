@@ -39,6 +39,9 @@ const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 #define FLOW_CTL_XOFF 0x13
 #define FLOW_CTL_XON 0x11
 
+#define WS_MAX_BLOCKED_CLIENTS 50
+#define WS_CLIENT_BLOCK_EXPIRE_MILLIS 5000
+
 struct led_blink_request_t {
     bool rx;
     bool tx;
@@ -72,6 +75,10 @@ private:
     uint32_t wsClients[WS_MAX_CLIENTS] = {0};
     uint64_t wsClientsLastSeen[WS_MAX_CLIENTS] = {0};
     uint8_t pendingAuthClients = 0;
+
+    uint8_t wsBlockedClientsLen = 0;
+    uint32_t wsBlockedClients[WS_MAX_BLOCKED_CLIENTS] = {0};
+    uint64_t wsClientBlockedAtMillis[WS_MAX_BLOCKED_CLIENTS] = {0};
 
     uint64_t lastClientPingMillis = millis();
     uint64_t lastClientTimeoutCheckMillis = millis();
@@ -132,6 +139,12 @@ public:
 
     void shrinkBuffers();
 
+    void blockClient(uint32_t clientId);
+
+    bool isClientBlocked(uint32_t clientId);
+    
+    bool isClientAuthenticated(uint32_t clientId);
+
 private:
 
     int findClientIndex(uint32_t clientId) {
@@ -157,8 +170,6 @@ private:
     void handleLedBlinkRequests();
 
     void markClientAuthenticated(uint32_t clientId);
-
-    bool isClientAuthenticated(uint32_t clientId);
 
     void nukeClient(uint32_t clientId, uint16_t closeReason);
 
@@ -187,6 +198,8 @@ private:
     bool performFlowControl_HeapFull();
 
     void collectStats();
+
+    void removeExpiredClientBlocks();
 };
 
 #endif //WI_SE_SW_TTYD_H
