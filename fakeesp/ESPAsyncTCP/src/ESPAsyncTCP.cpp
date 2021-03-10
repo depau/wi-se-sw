@@ -241,17 +241,25 @@ size_t AsyncClient::write(const char *data, size_t size, uint8_t apiflags) {
 }
 
 size_t AsyncClient::add(const char *data, size_t size, uint8_t apiflags) {
-    if (sock_fd < 0 || size == 0 || data == nullptr)
+    if (sock_fd < 0 || sockErrno != 0 || size == 0 || data == nullptr)
         return 0;
 
-    size_t sent = ::send(sock_fd, data, size, 0);
+    ssize_t sent = ::send(sock_fd, data, size, MSG_NOSIGNAL);
     if (sent == -1) {
+        if (errno != EWOULDBLOCK) {
+            sockErrno = errno;
+        }
         if (errno == EWOULDBLOCK) {
             return 0;  // Send later
         } else if (errno == ECONNRESET) {
             sockState = 0;
             _s_error(this, ERR_RST);
             return 0;
+        }else if (errno == EPIPE) {
+            perror("EPIPE");
+            if (sockState != 0) {
+                _s_error(this, ERR_RST);
+            }
         } else {
             perror("Failed sending to socket");
             return 0;
@@ -312,6 +320,10 @@ void AsyncClient::_recv(std::shared_ptr<ACErrorTracker> &errorTracker, tcp_pcb *
 }
 
 void AsyncClient::onDelayCB() {
+    if (!connected() || sockErrno != 0 || sock_fd == -1) {
+        return;
+    }
+
     while (sentBytesForCallback > 0) {
         // That bitch of a library sends more stuff in the onAck handler, we need to back up the variable so we don't
         // zero it and lock up websockets
@@ -320,9 +332,11 @@ void AsyncClient::onDelayCB() {
         _sent(_errorTracker, nullptr, sentTemp);
     }
 
-    char buf[2000];
-    ssize_t recvd = ::recv(sock_fd, buf, sizeof(buf), 0);
+    ssize_t recvd = ::recv(sock_fd, tempBuf, sizeof(tempBuf), 0);
     if (recvd < 0) {
+        if (errno != EWOULDBLOCK) {
+            sockErrno = errno;
+        }
         switch (errno) {
             case EWOULDBLOCK:
                 return;
@@ -339,20 +353,23 @@ void AsyncClient::onDelayCB() {
         // Socket closed
         sockState = 0;
         return _s_error(this, ERR_CLSD);
-    } else if (recvd > sizeof(buf)) {
+    } else if (recvd > sizeof(tempBuf)) {
         fprintf(stderr, "received %zd bytes, sounds weird\n", recvd);
         perror("Linux is broken");
         return _s_error(this, ERR_IF);
     }
 
-    if (fakePollLastSentMillis + 100 < millis()) {
+    if (fakePollLastSentMillis + 100 < millis() && connected()) {
         fakePollLastSentMillis = millis();
         _poll(_errorTracker, nullptr);
     }
 
     if (_recv_cb) {
         _recv_pbuf_flags = 0;
-        _recv_cb(_recv_cb_arg, this, buf, recvd);
+        fflush(stdout);
+        fprintf(stderr, "TCP sending read callback for %zd bytes\n", recvd);
+        fflush(stderr);
+        _recv_cb(_recv_cb_arg, this, tempBuf, recvd);
     }
 }
 
@@ -500,7 +517,6 @@ uint8_t AsyncClient::state() {
 }
 
 bool AsyncClient::connected() {
-    fprintf(stderr, "STUB connected()\n");
     return sockState == 4;
 }
 

@@ -112,6 +112,12 @@ class AsyncClient {
     uint8_t sockState = 0;
     uint64_t sentBytesForCallback = 0;
     uint64_t fakePollLastSentMillis = 0;
+public:
+    uint8_t undersmashDet = 0xaa;
+    char tempBuf[2000] = {0};
+    uint8_t smashDet = 0x55;
+private:
+    int sockErrno = 0;
 
     AcConnectHandler _connect_cb;
     void* _connect_cb_arg;
