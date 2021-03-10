@@ -7,12 +7,14 @@
 
 #include "Stream.h"
 #include "Arduino.h"
+#include "ArduinoTime.h"
 #include <cstdio>
 #include <unistd.h>
 #include <cerrno>
 #include <fcntl.h>
 #include <algorithm>
 #include "uart.h"
+#include "Serial.h"
 
 #define FAKESERIAL_BUF_LEN 10000
 
@@ -56,6 +58,7 @@ private:
     char buffer[FAKESERIAL_BUF_LEN] = {0};
     size_t seekPos = 0;
     size_t bufLen = 0;
+    double rate = 115200 / 8;
 
 public:
     FakeSerial(FILE *fd) : fd{fd} {}
@@ -79,18 +82,31 @@ public:
     }
 
     void begin(unsigned long baud, SerialConfig config, SerialMode mode, uint8_t tx_pin, bool invert) {
-
+        rate = ((double) baud) / 8.0;
     }
 
     void end() {}
 
+    void simulateBaudrate(uint64_t callTimeUs, size_t bytesTransceived) {
+#ifdef SIMULATE_BAUDRATE
+        uint64_t now = micros();
+        uint64_t transferDuration = (uint64_t) (bytesTransceived * 1000000 / rate);
+        delayMicrosecondsNoYield((callTimeUs - now) + transferDuration);
+#endif
+    }
+
     size_t write(uint8_t uint8) override {
-        return fputc(uint8, fd);
+        uint64_t now = micros();
+        fputc(uint8, fd);
+        simulateBaudrate(now, 1);
+        return 1;
     }
 
     size_t write(const uint8_t *outBuffer, size_t size) override {
+        uint64_t now = micros();
         size_t ret = fwrite(outBuffer, sizeof(uint8_t), size, fd);
         fflush(fd);
+        simulateBaudrate(now, size);
         return ret;
     }
 
@@ -116,6 +132,7 @@ public:
     }
 
     int read() override {
+        simulateBaudrate(0, 1);
         if (bufLen == 0) {
             return fgetc(stdin);
         }
@@ -132,6 +149,7 @@ public:
     }
 
     size_t readBytes(char *outBuffer, size_t length) override {
+        uint64_t now = micros();
         if (bufLen == 0) {
             available();
         }
@@ -152,6 +170,7 @@ public:
             bufLen -= seekPos;
             seekPos = 0;
         }
+        simulateBaudrate(now, readLen);
         return readLen;
     }
 

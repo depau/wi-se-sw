@@ -5,10 +5,13 @@
 #ifndef WI_SE_SW_ARDUINO_H
 #define WI_SE_SW_ARDUINO_H
 
+//#define SIMULATE_BAUDRATE
+
 #include <cstdint>
 #include <cstdarg>
 #include <algorithm>
 
+#include "ArduinoTime.h"
 #include "ESP.h"
 #include "WString.h"
 #include "Stream.h"
@@ -55,25 +58,7 @@ void analogWriteFreq(uint32_t freq);
 
 void analogWriteRange(uint32_t range);
 
-unsigned long millis();
-
-unsigned long micros();
-
-uint64_t micros64();
-
-void delay(unsigned long);
-
-void delayMicroseconds(unsigned int us);
-
-void yield();
-
 void panic();
-
-int32_t registerOnDelayCallback(void (*callback)(void *arg), void *arg);
-
-void deregisterOnDelayCallback(uint32_t id);
-
-void callOnDelayCallbacks();
 
 long map(long x, long in_min, long in_max, long out_min, long out_max);
 

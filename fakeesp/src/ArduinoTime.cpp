@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <stdint.h>
 
-#include "Arduino.h"
+#include "ArduinoTime.h"
 
 #define ODJT_LEN 50
 
@@ -61,12 +61,19 @@ uint64_t micros64() {
 }
 
 void delay(unsigned long ms) {
-    callOnDelayCallbacks();
     delayMicroseconds(ms * 1000);
+}
+
+void delayNoYield(unsigned long ms) {
+    delayMicrosecondsNoYield(ms * 1000);
 }
 
 void delayMicroseconds(unsigned int us) {
     callOnDelayCallbacks();
+    delayMicrosecondsNoYield(us);
+}
+
+void delayMicrosecondsNoYield(unsigned int us) {
     struct timespec delta = {us / (1000 * 1000), (us % (1000 * 1000)) * 1000};
     while (nanosleep(&delta, &delta));
 }
