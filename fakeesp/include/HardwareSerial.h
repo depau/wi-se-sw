@@ -2,8 +2,8 @@
 // Created by depau on 3/6/21.
 //
 
-#ifndef WI_SE_SW_SERIAL_H
-#define WI_SE_SW_SERIAL_H
+#ifndef WI_SE_SW_HARDWARESERIAL_H
+#define WI_SE_SW_HARDWARESERIAL_H
 
 #include "Stream.h"
 #include "Arduino.h"
@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <algorithm>
 #include "uart.h"
-#include "Serial.h"
+#include "HardwareSerial.h"
 
 #define FAKESERIAL_BUF_LEN 10000
 
@@ -199,7 +199,12 @@ public:
     }
 };
 
-extern FakeSerial Serial;
-extern FakeSerial Serial1;
+class HardwareSerial : public FakeSerial {
+public:
+    HardwareSerial(FILE *fd) : FakeSerial(fd) {};
+};
 
-#endif //WI_SE_SW_SERIAL_H
+extern HardwareSerial Serial;
+extern HardwareSerial Serial1;
+
+#endif //WI_SE_SW_HARDWARESERIAL_H

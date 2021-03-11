@@ -4,6 +4,9 @@
 
 #ifndef WI_SE_SW_UART_H
 #define WI_SE_SW_UART_H
+
+#define UART_CLK_FREQ 115200
+
 #define UART0    0
 #define UART1    1
 #define UART_NO -1
@@ -84,5 +87,8 @@
 #define UART_TX_ONLY  2
 
 #define UART_TX_FIFO_SIZE 0x80
+
+void uart_start_detect_baudrate(int);
+int uart_baudrate_detect(int, int);
 
 #endif //WI_SE_SW_UART_H

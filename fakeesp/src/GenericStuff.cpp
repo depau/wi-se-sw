@@ -33,8 +33,8 @@ namespace std { // NOLINT(cert-dcl58-cpp)
 
 
 FakeESP ESP;
-FakeSerial Serial(stdout);
-FakeSerial Serial1(stderr);
+HardwareSerial Serial(stdout);
+HardwareSerial Serial1(stderr);
 FakeArduinoOTA ArduinoOTA;
 FakeWiFi WiFi;
 FakeMDNS MDNS;

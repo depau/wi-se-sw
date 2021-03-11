@@ -15,7 +15,7 @@
 #include "ESP.h"
 #include "WString.h"
 #include "Stream.h"
-#include "Serial.h"
+#include "HardwareSerial.h"
 #include "progmem.h"
 
 typedef bool boolean;
