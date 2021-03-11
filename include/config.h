@@ -95,7 +95,7 @@
 #define UART_BUFFER_BELOW_SOFT_MIN_DYNAMIC_DELAY (std::min((int) (1000L * WS_SEND_BUF_SIZE * 8L * 2 / 3 / uartBaudRate), 5))
 
 // Automatic baudrate detection interval
-#define UART_AUTOBAUD_TIMEOUT_MILLIS 3000
+#define UART_AUTOBAUD_TIMEOUT_MILLIS 10000
 #define UART_AUTOBAUD_ATTEMPT_INTERVAL 100
 
 // UART software flow control, improves stability. It must be supported by the connected device for it to make any
