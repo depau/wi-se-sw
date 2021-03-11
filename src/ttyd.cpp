@@ -206,7 +206,7 @@ void TTY::nukeClient(uint32_t clientId, uint16_t closeReason) {
 void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t len, char fragmentCachedCommand) {
     char command = buf[0];
     bool isAuthToken = false;
-    const char *authToken = nullptr;
+    char authToken[HTTP_AUTH_TOKEN_LEN];
 
     debugf("TTY new message, client %d, command %c, cached command %c free heap %d\r\n", clientId, command,
            fragmentCachedCommand, ESP.getFreeHeap());
@@ -227,13 +227,14 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
         }
         if (doc.containsKey("AuthToken")) {
             isAuthToken = true;
-            authToken = doc["AuthToken"];
+            const char *tmpToken = doc["AuthToken"];
+            strncpy(authToken, tmpToken, HTTP_AUTH_TOKEN_LEN);
         }
     }
 
     if (!isClientAuthenticated(clientId)) {
         if (HTTP_AUTH_ENABLE &&
-            (!isAuthToken || authToken == nullptr || strncmp((char *) authToken, token, HTTP_AUTH_TOKEN_LEN) != 0)) {
+            (!isAuthToken || authToken[0] == 0 || strncmp((char *) authToken, token, HTTP_AUTH_TOKEN_LEN) != 0)) {
             debugf("TTY client policy violation %d\r\n", clientId);
             nukeClient(clientId, WS_CLOSE_POLICY_VIOLATION);
             return;
