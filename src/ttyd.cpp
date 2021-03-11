@@ -322,6 +322,7 @@ void TTY::flowControlUartRequestStop(uint8_t source) {
     }
     if (uartFlowControlStatus == 0) {
         UART_COMM.write(FLOW_CTL_XOFF);
+        uartFlowControlEngagedMillis = millis();
     }
     uartFlowControlStatus |= source;
 }
@@ -433,6 +434,12 @@ bool TTY::performFlowControl_SlowWiFi(size_t uartAvailable) {
     return uartFlowControlStatus && FLOW_CTL_SRC_LOCAL == FLOW_CTL_SRC_LOCAL;
 }
 
+void TTY::unlockUartFlowControlIfTimedOut() {
+    if (uartFlowControlStatus && uartFlowControlEngagedMillis + UART_SW_LOCAL_FLOW_CONTROL_STOP_MAX_MS > millis()) {
+        flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL | FLOW_CTL_SRC_REMOTE);
+    }
+}
+
 // Trigger flow control (WebSocket side) if the heap is too full
 bool TTY::performFlowControl_HeapFull() {
     if (wsFlowControlStopped) {
@@ -500,6 +507,9 @@ void TTY::dispatchUart() {
     }
 
     performFlowControl_SlowWiFi(available);
+
+    // Avoid flow control deadlocks
+    unlockUartFlowControlIfTimedOut();
 
     bool shouldContinueDispatching = wsCanSend() && !performFlowControl_HeapFull();
 

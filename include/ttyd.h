@@ -91,6 +91,8 @@ private:
     union led_blink_schedule_u ledsBusyUntilMillis = {{0}};
 
     uint8_t uartFlowControlStatus = 0;
+    unsigned long uartFlowControlEngagedMillis = 0;
+
     // We won't take care of flow control commands coming from UART for the time being, it's O(n) but we don't have much
     // time too waste. Also, chances are that it will be handled already by the remote terminal.
     bool wsFlowControlStopped = false;
@@ -208,6 +210,8 @@ private:
     void requestBaudrateDetection();
 
     void sendBaurateDetectionResult(int64_t baudrate);
+
+    void unlockUartFlowControlIfTimedOut();
 };
 
 #endif //WI_SE_SW_TTYD_H
