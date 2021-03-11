@@ -14,6 +14,7 @@
 #define CMD_PAUSE '2'
 #define CMD_RESUME '3'
 #define CMD_JSON_DATA '{'
+#define CMD_DETECT_BAUD 'B'
 
 // server message
 #define CMD_OUTPUT '0'
@@ -23,6 +24,7 @@
 
 #define CMD_SERVER_PAUSE 'S'
 #define CMD_SERVER_RESUME 'Q'
+#define CMD_SERVER_DETECTED_BAUD 'B'
 
 const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 
@@ -93,6 +95,8 @@ private:
     // time too waste. Also, chances are that it will be handled already by the remote terminal.
     bool wsFlowControlStopped = false;
     unsigned long wsFlowControlEngagedMillis = 0;
+
+    bool pendingBaudDetection = false;
 
     // Stats refer to the UART side
     uint64_t lastStatsCollectMillis = millis();
@@ -200,6 +204,10 @@ private:
     void collectStats();
 
     void removeExpiredClientBlocks();
+
+    void requestBaudrateDetection();
+
+    void sendBaurateDetectionResult(int64_t baudrate);
 };
 
 #endif //WI_SE_SW_TTYD_H

@@ -262,6 +262,8 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             totalTx += len - 1;
             requestLedBlink.leds.tx = true;
             break;
+        case CMD_DETECT_BAUD:
+            requestBaudrateDetection();
         case CMD_PAUSE:
             flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
             break;
@@ -458,12 +460,29 @@ void TTY::collectStats() {
     prevRx = totalRx;
 }
 
+void TTY::requestBaudrateDetection() {
+    pendingBaudDetection = true;
+}
+
+void TTY::sendBaurateDetectionResult(int64_t baudrate) {
+    uint8_t buf[30];
+    size_t len = snprintf(reinterpret_cast<char *>(buf), sizeof(buf), "%c%lld", CMD_SERVER_DETECTED_BAUD, baudrate);
+    auto wsBuf = websocket->makeBuffer(buf, len);
+    broadcastBufferToClients(wsBuf);
+}
+
+
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
         // Unlock all flow control
         flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL | FLOW_CTL_SRC_REMOTE);
         wsFlowControlStopped = false; // No clients connected, so we just set the flag.
         return;
+    }
+
+    if (pendingBaudDetection) {
+        sendBaurateDetectionResult(UART_COMM.detectBaudrate(1000));
+        pendingBaudDetection = false;
     }
 
     size_t available = UART_COMM.available();
