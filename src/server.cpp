@@ -232,10 +232,18 @@ WiSeServer::handleSttyBody(
         }
 
         if (doc.containsKey("baudrate")) {
-            if (!doc["baudrate"].is<unsigned int>()) {
-                return invalidJsonBadRequest(request, "\"baudrate\" must be a positive number");
+            if (!doc["baudrate"].is<unsigned int>() && !doc["baudrate"].is<const char *>()) {
+                return invalidJsonBadRequest(request, R"("baudrate" must be a positive number or "auto")");
             }
-            baudrate = doc["baudrate"];
+            if (doc["baudrate"].is<const char *>()) {
+                const char *baudParam = doc["baudrate"];
+                if (strcmp(baudParam, "auto") != 0) {
+                    return invalidJsonBadRequest(request, R"("baudrate" must be a positive number or "auto")");
+                }
+                baudrate = ttyd->detectBaudrate();
+            } else {
+                baudrate = doc["baudrate"];
+            }
         }
 
         if (doc.containsKey("bits")) {

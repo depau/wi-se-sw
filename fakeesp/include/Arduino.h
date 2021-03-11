@@ -20,6 +20,8 @@
 
 typedef bool boolean;
 
+#define __unused
+
 // Fake ESP OS functions
 #define os_strlen strlen
 #define ets_printf(...) fprintf(stderr, __VA_ARGS__)

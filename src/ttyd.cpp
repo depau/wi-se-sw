@@ -38,6 +38,10 @@ void TTY::stty(uint32_t baudrate, uint8_t config) {
     }
 }
 
+uint32_t TTY::detectBaudrate(time_t timeoutMillis) {
+    return UART_COMM.detectBaudrate(timeoutMillis);
+}
+
 void TTY::markClientAuthenticated(uint32_t clientId) {
     wsClients[wsClientsLen++] = clientId;
     pendingAuthClients--;

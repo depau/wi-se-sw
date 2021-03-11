@@ -95,6 +95,10 @@ public:
 #endif
     }
 
+    uint32_t detectBaudrate(time_t timeoutMillis) {
+        return 115200;
+    }
+
     size_t write(uint8_t uint8) override {
         uint64_t now = micros();
         fputc(uint8, fd);
