@@ -89,7 +89,7 @@ size_t TTY::snprintWindowTitle(char *dest, size_t len) const {
             break;
     }
 
-    return snprintf(dest, len, "%dbps %c%c%s (%s) - Wi-Se", uartBaudRate, bits, parity, stop, WIFI_HOSTNAME);
+    return snprintf(dest, len, "%dbps %c%c%s (%s) - Wi-Se", uartBaudRate, bits, parity, stop, DEVICE_PRETTY_NAME);
 }
 
 void TTY::sendClientConfiguration(uint32_t clientId) {
