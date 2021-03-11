@@ -44,6 +44,7 @@ void WiSeServer::begin() {
 
         DynamicJsonDocument doc(2000);
         doc["board"] = BOARD_NAME;
+        doc["pretty_name"] = DEVICE_PRETTY_NAME;
         doc["hostname"] = WIFI_HOSTNAME;
 
         JsonObject software = doc.createNestedObject("software");
