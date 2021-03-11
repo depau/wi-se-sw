@@ -48,9 +48,7 @@ public:
             websocket{websocket},
             ttyd{ttyd} {
         // Format server header
-        size_t end = snprintf(serverHeader, sizeof(serverHeader) / sizeof(char), "%s ESP/", "Wi-Se/" VERSION);
-        ESP.getFullVersion().toCharArray(serverHeader + end, (sizeof(serverHeader) / sizeof(char)));
-        serverHeader[end + ESP.getFullVersion().length()] = 0;
+        snprintf(serverHeader, sizeof(serverHeader) / sizeof(char), "%s", "Wi-Se/" VERSION);
     };
 
     void begin();
