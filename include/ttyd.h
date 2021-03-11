@@ -91,16 +91,16 @@ private:
     union led_blink_schedule_u ledsBusyUntilMillis = {{0}};
 
     uint8_t uartFlowControlStatus = 0;
-    unsigned long uartFlowControlEngagedMillis = 0;
+    uint64_t uartFlowControlEngagedMillis = 0;
 
     // We won't take care of flow control commands coming from UART for the time being, it's O(n) but we don't have much
     // time too waste. Also, chances are that it will be handled already by the remote terminal.
     bool wsFlowControlStopped = false;
-    unsigned long wsFlowControlEngagedMillis = 0;
+    uint64_t wsFlowControlEngagedMillis = 0;
 
-    bool pendingBaudDetection = false;
-    unsigned long autobaudStartedAtMillis = 0;
-    unsigned int autobaudLastAttemptAtMillis = 0;
+    bool pendingAutobaud = false;
+    uint64_t autobaudStartedAtMillis = 0;
+    uint64_t autobaudLastAttemptAtMillis = 0;
 
     // Stats refer to the UART side
     uint64_t lastStatsCollectMillis = millis();
@@ -209,7 +209,7 @@ private:
 
     void removeExpiredClientBlocks();
 
-    void requestBaudrateDetection();
+    void requestAutobaud();
 
     void sendBaurateDetectionResult(int64_t bestApprox, int64_t measured);
 

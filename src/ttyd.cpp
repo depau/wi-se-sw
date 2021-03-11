@@ -265,7 +265,8 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             break;
         case CMD_DETECT_BAUD:
             debugf("TTY Requesting baudrate detection\r\n");
-            requestBaudrateDetection();
+            requestAutobaud();
+            break;
         case CMD_PAUSE:
             flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
             break;
@@ -322,6 +323,7 @@ void TTY::flowControlUartRequestStop(uint8_t source) {
         return;
     }
     if (uartFlowControlStatus == 0) {
+        debugf("TTY uart flow control XOFF source %d\r\n", source);
         UART_COMM.write(FLOW_CTL_XOFF);
         uartFlowControlEngagedMillis = millis();
     }
@@ -337,6 +339,7 @@ void TTY::flowControlUartRequestResume(uint8_t source) {
     }
     uartFlowControlStatus &= ~source;
     if (uartFlowControlStatus == 0) {
+        debugf("TTY uart flow control XON source %d\r\n", source);
         UART_COMM.write(FLOW_CTL_XON);
     }
 }
@@ -345,6 +348,7 @@ void TTY::flowControlWebSocketRequest(bool stop) {
     if (wsFlowControlStopped == stop) {
         return;
     }
+    debugf("TTY ws flow control enabled: %d\r\n", stop);
     wsFlowControlStopped = stop;
     AsyncWebSocketMessageBuffer *buffer = websocket->makeBuffer(1);
     buffer->get()[0] = stop ? CMD_SERVER_PAUSE : CMD_SERVER_RESUME;
@@ -432,11 +436,11 @@ bool TTY::performFlowControl_SlowWiFi(size_t uartAvailable) {
     }
     // Don't stop dispatching if the client requested it and UART is still sending.
     // We've got 80K of RAM, the browser has more.
-    return uartFlowControlStatus && FLOW_CTL_SRC_LOCAL == FLOW_CTL_SRC_LOCAL;
+    return (uartFlowControlStatus & FLOW_CTL_SRC_LOCAL) == FLOW_CTL_SRC_LOCAL;
 }
 
 void TTY::unlockUartFlowControlIfTimedOut() {
-    if (uartFlowControlStatus && uartFlowControlEngagedMillis + UART_SW_LOCAL_FLOW_CONTROL_STOP_MAX_MS > millis()) {
+    if (uartFlowControlStatus && uartFlowControlEngagedMillis + UART_SW_LOCAL_FLOW_CONTROL_STOP_MAX_MS < millis()) {
         flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL | FLOW_CTL_SRC_REMOTE);
     }
 }
@@ -469,14 +473,14 @@ void TTY::collectStats() {
     prevRx = totalRx;
 }
 
-void TTY::requestBaudrateDetection() {
-    pendingBaudDetection = true;
+void TTY::requestAutobaud() {
+    pendingAutobaud = true;
 }
 
 void TTY::sendBaurateDetectionResult(int64_t bestApprox, int64_t measured) {
-    debugf("TTY Detected baudrate: %ld (measured: %ld)\r\n", bestApprox, measured);
+    debugf("TTY Detected baudrate: %lld (measured: %lld)\r\n", bestApprox, measured);
     uint8_t buf[30];
-    size_t len = snprintf(reinterpret_cast<char *>(buf), sizeof(buf), "%c%ld,%ld", CMD_SERVER_DETECTED_BAUD,
+    size_t len = snprintf(reinterpret_cast<char *>(buf), sizeof(buf), "%c%lld,%lld", CMD_SERVER_DETECTED_BAUD,
                           bestApprox, measured);
     auto wsBuf = websocket->makeBuffer(buf, len);
     broadcastBufferToClients(wsBuf);
@@ -495,14 +499,14 @@ void TTY::autobaud() {
 
     if (measured) {
         int bestApprox = wise_autobaud_closest_std_rate(measured);
-        pendingBaudDetection = false;
+        pendingAutobaud = false;
         autobaudStartedAtMillis = 0;
         autobaudLastAttemptAtMillis = 0;
         return sendBaurateDetectionResult(bestApprox, measured);
     }
 
     if (autobaudStartedAtMillis + UART_AUTOBAUD_TIMEOUT_MILLIS < millis()) {
-        pendingBaudDetection = false;
+        pendingAutobaud = false;
         autobaudStartedAtMillis = 0;
         autobaudLastAttemptAtMillis = 0;
         return sendBaurateDetectionResult(0, 0);
@@ -518,12 +522,13 @@ void TTY::dispatchUart() {
         return;
     }
 
-    if (pendingBaudDetection) {
+    if (pendingAutobaud) {
         autobaud();
     }
 
     size_t available = UART_COMM.available();
     if (!available) {
+        unlockUartFlowControlIfTimedOut();
         return;
     }
     // Rather wait a little bit longer instead of sending a crapload of tiny chunks that take
