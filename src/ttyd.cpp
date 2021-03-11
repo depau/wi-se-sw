@@ -263,6 +263,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             requestLedBlink.leds.tx = true;
             break;
         case CMD_DETECT_BAUD:
+            debugf("TTY Requesting baudrate detection\r\n");
             requestBaudrateDetection();
         case CMD_PAUSE:
             flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
@@ -275,7 +276,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021
             break;
         default:
-            debugf("Ignoring client invalid data, len %zu first char %c\r\n", len, buf[0]);
+            debugf("TTY Ignoring client invalid data, len %zu first char %c\r\n", len, buf[0]);
             //nukeClient(clientId, WS_CLOSE_BAD_DATA);
     }
 }
@@ -465,6 +466,7 @@ void TTY::requestBaudrateDetection() {
 }
 
 void TTY::sendBaurateDetectionResult(int64_t baudrate) {
+    debugf("TTY Detected baudrate: %lld\r\n", baudrate);
     uint8_t buf[30];
     size_t len = snprintf(reinterpret_cast<char *>(buf), sizeof(buf), "%c%lld", CMD_SERVER_DETECTED_BAUD, baudrate);
     auto wsBuf = websocket->makeBuffer(buf, len);
