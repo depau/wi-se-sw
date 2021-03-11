@@ -19,6 +19,7 @@
 #include "progmem.h"
 
 typedef bool boolean;
+#define __unused
 
 // Fake ESP OS functions
 #define os_strlen strlen
