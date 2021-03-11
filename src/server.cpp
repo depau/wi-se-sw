@@ -38,6 +38,11 @@ void WiSeServer::begin() {
         if (!checkHttpBasicAuth(request)) return;
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
     });
+    httpd->on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (!checkHttpBasicAuth(request)) return;
+        request->send(200, "text/plain", "");
+        ESP.reset();
+    });
     httpd->on("/whoami", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;
         AsyncResponseStream *response = request->beginResponseStream("application/json");
