@@ -95,6 +95,13 @@ public:
 #endif
     }
 
+    unsigned long detectBaudrate(time_t timeoutMillis) {
+        for (int iters = std::max((int) timeoutMillis / 100, 1); iters > 0; iters--) {
+            delay(100);
+        }
+        return 115200;
+    }
+
     size_t write(uint8_t uint8) override {
         uint64_t now = micros();
         fputc(uint8, fd);
