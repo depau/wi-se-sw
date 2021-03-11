@@ -99,6 +99,8 @@ private:
     unsigned long wsFlowControlEngagedMillis = 0;
 
     bool pendingBaudDetection = false;
+    unsigned long autobaudStartedAtMillis = 0;
+    unsigned int autobaudLastAttemptAtMillis = 0;
 
     // Stats refer to the UART side
     uint64_t lastStatsCollectMillis = millis();
@@ -209,9 +211,11 @@ private:
 
     void requestBaudrateDetection();
 
-    void sendBaurateDetectionResult(int64_t baudrate);
+    void sendBaurateDetectionResult(int64_t bestApprox, int64_t measured);
 
     void unlockUartFlowControlIfTimedOut();
+
+    void autobaud();
 };
 
 #endif //WI_SE_SW_TTYD_H

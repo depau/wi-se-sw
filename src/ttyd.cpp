@@ -9,7 +9,7 @@
 #include "config.h"
 #include "server.h"
 #include "ttyd.h"
-
+#include "autobaud.h"
 
 void TTY::shrinkBuffers() {
     UART_COMM.flush();
@@ -473,12 +473,40 @@ void TTY::requestBaudrateDetection() {
     pendingBaudDetection = true;
 }
 
-void TTY::sendBaurateDetectionResult(int64_t baudrate) {
-    debugf("TTY Detected baudrate: %lld\r\n", baudrate);
+void TTY::sendBaurateDetectionResult(int64_t bestApprox, int64_t measured) {
+    debugf("TTY Detected baudrate: %ld (measured: %ld)\r\n", bestApprox, measured);
     uint8_t buf[30];
-    size_t len = snprintf(reinterpret_cast<char *>(buf), sizeof(buf), "%c%lld", CMD_SERVER_DETECTED_BAUD, baudrate);
+    size_t len = snprintf(reinterpret_cast<char *>(buf), sizeof(buf), "%c%ld,%ld", CMD_SERVER_DETECTED_BAUD,
+                          bestApprox, measured);
     auto wsBuf = websocket->makeBuffer(buf, len);
     broadcastBufferToClients(wsBuf);
+}
+
+void TTY::autobaud() {
+    if (autobaudStartedAtMillis == 0) {
+        autobaudStartedAtMillis = millis();
+    }
+    if (autobaudLastAttemptAtMillis + UART_AUTOBAUD_ATTEMPT_INTERVAL > millis()) {
+        return;
+    }
+
+    autobaudLastAttemptAtMillis = millis();
+    int measured = wise_autobaud_detect(&UART_COMM);
+
+    if (measured) {
+        int bestApprox = wise_autobaud_closest_std_rate(measured);
+        pendingBaudDetection = false;
+        autobaudStartedAtMillis = 0;
+        autobaudLastAttemptAtMillis = 0;
+        return sendBaurateDetectionResult(bestApprox, measured);
+    }
+
+    if (autobaudStartedAtMillis + UART_AUTOBAUD_TIMEOUT_MILLIS < millis()) {
+        pendingBaudDetection = false;
+        autobaudStartedAtMillis = 0;
+        autobaudLastAttemptAtMillis = 0;
+        return sendBaurateDetectionResult(0, 0);
+    }
 }
 
 
@@ -491,8 +519,7 @@ void TTY::dispatchUart() {
     }
 
     if (pendingBaudDetection) {
-        sendBaurateDetectionResult(UART_COMM.detectBaudrate(1000));
-        pendingBaudDetection = false;
+        autobaud();
     }
 
     size_t available = UART_COMM.available();
