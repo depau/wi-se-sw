@@ -125,8 +125,6 @@ public:
 
     void stty(uint32_t baudrate, uint8_t config);
 
-    uint32_t detectBaudrate(time_t timeoutMillis = 1000);
-
     bool onNewWebSocketClient(uint32_t clientId);
 
     void removeClient(uint32_t clientId);
