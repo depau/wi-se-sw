@@ -11,7 +11,6 @@
 #define BOARD_WI_SE_REWIRABLE_V01 3
 
 #if BOARD_TYPE == BOARD_WI_SE_REWIRABLE_V01
-#define BOARD_NAME "Wi-Se Rewirable v0.1"
 #define LED_WIFI 5
 #define LED_STATUS 13
 #define LED_TX 14
@@ -35,8 +34,10 @@
 #define BOARD_NAME "Generic ESP8266 board"
 #elif BOARD_TYPE == BOARD_WI_SE_RPI_V01
 #define BOARD_NAME "Wi-Se Raspberry Pi Header v0.1"
-#elif BOARD_TYPE == BBOARD_WI_SE_OPI4_V01
+#elif BOARD_TYPE == BOARD_WI_SE_OPI4_V01
 #define BOARD_NAME "Wi-Se Orange Pi 4 v0.1"
+#elif BOARD_TYPE == BOARD_WI_SE_REWIRABLE_V01
+#define BOARD_NAME "Wi-Se Rewirable v0.1"
 #else
 #define BOARD_NAME "Unknown"
 #endif
