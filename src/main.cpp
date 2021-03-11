@@ -36,7 +36,7 @@ void setup() {
     // Generate token
     if (HTTP_AUTH_ENABLE) {
         const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
-        for (int i; i < HTTP_AUTH_TOKEN_LEN; i++) {
+        for (int i = 0; i < HTTP_AUTH_TOKEN_LEN; i++) {
             token[i] = charset[ESP.random() % (int) (sizeof charset - 1)];
         }
     }
