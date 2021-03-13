@@ -174,7 +174,9 @@ Another possible reason is that the firmware crashed. When the firmware crashes,
 may result in sending a "break condition", which causes [`agetty`](https://man.archlinux.org/man/agetty.8) to switch to the next baud rate.
 
 If you're using `ttyc` you can attempt to manually send more breaks, until the terminal becomes responsive again, or try to perform an
-automatic baud detection.
+automatic baud detection. Every time you send a break, `agetty` will try the next baud rate. Note that if the current console is enabled for
+kernel messages and [SysRq](https://www.kernel.org/doc/html/latest/admin-guide/sysrq.html#how-do-i-use-the-magic-sysrq-key) is enabled you
+have to send a break twice in a row.
 
 As a workaround you can change, on connected device, the options passed to `agetty` and configure it to use a single baudrate. On
 systemd-based distributions you can run `sudo systemctl edit serial-getty@ttyXXX.service` (you can retrieve the TTY by running `tty`), then
@@ -244,8 +246,8 @@ When performing OTA, the device will switch to "Christmas tree lights mode" and 
 - OTA start: LEDs turn on one at a time, twice, in sequence RX, TX, Status, Wi-Fi
 - OTA progress: the LEDs will act as a firmware download progress bar
 - OTA error: RX/TX LEDs blink slowly
-- OTA success: RX, TX and status LEDs will turn off in sequence, Wi-Fi LED will stay on. The device will restart after ~3 sec into the
-  new firmware.
+- OTA success: RX, TX and status LEDs will turn off in sequence, Wi-Fi LED will stay on. The device will restart after ~3 sec into the new
+  firmware.
 
 ## License
 
