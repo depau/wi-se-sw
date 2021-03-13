@@ -13,7 +13,6 @@ from typing import Optional
 
 import pyjq
 import yaml
-from frozendict import frozendict
 from jinja2 import Environment, FileSystemLoader
 
 try:
@@ -30,12 +29,12 @@ COLOR_INFO = BRIGHT_BLUE
 COLOR_OK = BRIGHT_GREEN
 COLOR_NOK = BRIGHT_RED
 
-BOARD_TYPES = frozendict({
+BOARD_TYPES = {
     'generic': 0,
     'wi-se-rpi-v0.1': 1,
     'wi-se-opi4-v0.1': 2,
     'wi-se-rewirable-v0.1': 3
-})
+}
 
 
 # noinspection PyPep8Naming
@@ -437,7 +436,6 @@ def banner(string, color=COLOR_INFO):
     print('=' + f" {color}{string}{RESET_COLOR} ".ljust(get_console_width() - 1, '='))
 
 
-
 def main():
     debug = False
     jobs = nproc()
@@ -528,6 +526,7 @@ def main():
             banner(f"FAILED - {builder.config_name}", COLOR_NOK)
 
         print()
+
 
 if __name__ == "__main__":
     main()
