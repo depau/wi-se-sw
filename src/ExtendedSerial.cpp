@@ -51,8 +51,8 @@ int ExtendedSerial::autobaudGetClosestStdRate(int32_t rawBaud) {
 void ExtendedSerial::sendBreak() {
     uart_wait_tx_empty(_uart);
     USC0(_uart_nr) |= BIT(UCBRK);
-    // Wait for the amount of time it takes to send 1.5 frames
-    delayMicroseconds(8 * 1500000 / uart_get_baudrate(_uart));
+    // 10ms should be enough to convince agetty we sent a break without breaking Wi-Fi
+    delayMicroseconds(10 * 1000);
     USC0(_uart_nr) &= ~BIT(UCBRK);
 }
 #pragma clang diagnostic pop
