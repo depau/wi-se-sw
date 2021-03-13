@@ -15,6 +15,7 @@
 #define CMD_RESUME '3'
 #define CMD_JSON_DATA '{'
 #define CMD_DETECT_BAUD 'B'
+#define CMD_SEND_BREAK 'b'
 
 // server message
 #define CMD_OUTPUT '0'

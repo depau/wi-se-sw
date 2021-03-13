@@ -267,6 +267,10 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             debugf("TTY Requesting baudrate detection\r\n");
             requestAutobaud();
             break;
+        case CMD_SEND_BREAK:
+            debugf("TTY Send break\r\n");
+            UART_COMM.sendBreak();
+            break;
         case CMD_PAUSE:
             flowControlUartRequestStop(FLOW_CTL_SRC_REMOTE);
             break;

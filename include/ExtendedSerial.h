@@ -19,6 +19,7 @@ public:
 
     static int autobaudGetClosestStdRate(int32_t rawBaud);
 
+    void sendBreak();
 };
 
 

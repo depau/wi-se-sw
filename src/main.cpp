@@ -6,6 +6,7 @@
 #include "config.h"
 #include "server.h"
 #include "debug.h"
+#include "ExtendedSerial.h"
 
 ADC_MODE(ADC_VCC);
 

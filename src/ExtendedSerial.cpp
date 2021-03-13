@@ -4,6 +4,7 @@
 
 #include "../include/ExtendedSerial.h"
 
+#include <Arduino.h>
 #include <uart.h>
 #include <esp8266_peri.h>
 #include <user_interface.h>
@@ -44,6 +45,17 @@ int ExtendedSerial::autobaudGetClosestStdRate(int32_t rawBaud) {
 
     return default_rates[i];
 }
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wint-to-pointer-cast"
+void ExtendedSerial::sendBreak() {
+    uart_wait_tx_empty(_uart);
+    USC0(_uart_nr) |= BIT(UCBRK);
+    // Wait for the amount of time it takes to send 1.5 frames
+    delayMicroseconds(8 * 1500000 / uart_get_baudrate(_uart));
+    USC0(_uart_nr) &= ~BIT(UCBRK);
+}
+#pragma clang diagnostic pop
 
 
 ExtendedSerial ExtSerial0(UART0);
