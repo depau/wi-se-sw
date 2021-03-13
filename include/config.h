@@ -1,6 +1,6 @@
 //
 // AUTOMATICALLY GENERATED, DO NOT EDIT.
-// Generated on Sat Mar 13 17:21:31 2021.
+// Generated on Sat Mar 13 22:44:43 2021.
 //
 
 #include <uart.h>
@@ -22,11 +22,11 @@
 #define BOARD_TYPE 0
 
 // UART configuration
-#define UART_COMM Serial
+#define UART_COMM ExtSerial0
 #define UART_COMM_BAUD 115200
 #define UART_COMM_CONFIG (UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)
 
-#define UART_DEBUG Serial
+#define UART_DEBUG ExtSerial0
 #define UART_DEBUG_BAUD 115200
 #define UART_DEBUG_CONFIG (UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)
 

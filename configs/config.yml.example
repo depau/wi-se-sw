@@ -66,15 +66,15 @@ upload:
 uart:
   # UART used for normal configuration
   uart_comm:
-    # Serial object name to use (Serial or Serial1)
-    serial: Serial
+    # Serial object name to use (0 or 1)
+    serial: 0
     baud: 115200
     #config: '(UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)'
 
   # UART used for debugging messages, if enabled
   # It can be set to the same UART used for communication, in which case baud/config are ignored
   uart_debug:
-    serial: Serial
+    serial: 0
     baud: 115200
     #config: '(UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)'
 

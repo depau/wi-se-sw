@@ -83,7 +83,8 @@ class ConfigHeaderExtractor(Extractor):
 
     @property
     def UART_COMM(self):
-        return self.jq('.uart.uart_comm.serial', 'Serial')
+        uart_nr = self.jq('.uart.uart_comm.serial', 0)
+        return f"ExtSerial{uart_nr}"
 
     @property
     def UART_COMM_BAUD(self):
@@ -95,7 +96,8 @@ class ConfigHeaderExtractor(Extractor):
 
     @property
     def UART_DEBUG(self):
-        return self.jq('.uart.uart_debug.serial', 'Serial')
+        uart_nr = self.jq('.uart.uart_debug.serial', 0)
+        return f"ExtSerial{uart_nr}"
 
     @property
     def UART_DEBUG_BAUD(self):

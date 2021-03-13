@@ -9,7 +9,7 @@
 #include "config.h"
 #include "server.h"
 #include "ttyd.h"
-#include "autobaud.h"
+#include "ExtendedSerial.h"
 
 void TTY::shrinkBuffers() {
     UART_COMM.flush();
@@ -164,13 +164,13 @@ void TTY::removeExpiredClientBlocks() {
     // Iterate forward and fill any holes with items from the end
     for (int i = 0; i < wsBlockedClientsLen; i++) {
         if (wsClientBlockedAtMillis[i] == 0) {
-            wsBlockedClients[i] = wsBlockedClients[wsBlockedClientsLen-1];
-            wsClientBlockedAtMillis[i] = wsClientBlockedAtMillis[wsBlockedClientsLen-1];
-            wsBlockedClients[wsBlockedClientsLen-1] = 0;
-            wsClientBlockedAtMillis[wsBlockedClientsLen-1] = 0;
+            wsBlockedClients[i] = wsBlockedClients[wsBlockedClientsLen - 1];
+            wsClientBlockedAtMillis[i] = wsClientBlockedAtMillis[wsBlockedClientsLen - 1];
+            wsBlockedClients[wsBlockedClientsLen - 1] = 0;
+            wsClientBlockedAtMillis[wsBlockedClientsLen - 1] = 0;
             wsBlockedClientsLen--;
         }
-        while (wsBlockedClientsLen > 0 && wsClientBlockedAtMillis[wsBlockedClientsLen-1] == 0) {
+        while (wsBlockedClientsLen > 0 && wsClientBlockedAtMillis[wsBlockedClientsLen - 1] == 0) {
             wsBlockedClientsLen--;
         }
     }
@@ -178,7 +178,7 @@ void TTY::removeExpiredClientBlocks() {
 
 bool TTY::isClientBlocked(uint32_t clientId) {
     removeExpiredClientBlocks();
-    for (int i=0; i < wsBlockedClientsLen; i++) {
+    for (int i = 0; i < wsBlockedClientsLen; i++) {
         if (wsBlockedClients[i] == clientId) {
             return true;
         }
@@ -495,10 +495,10 @@ void TTY::autobaud() {
     }
 
     autobaudLastAttemptAtMillis = millis();
-    int measured = wise_autobaud_detect(&UART_COMM);
+    int measured = UART_COMM.autobaudMeasure();
 
     if (measured) {
-        int bestApprox = wise_autobaud_closest_std_rate(measured);
+        int bestApprox = UART_COMM.autobaudGetClosestStdRate(measured);
         pendingAutobaud = false;
         autobaudStartedAtMillis = 0;
         autobaudLastAttemptAtMillis = 0;
