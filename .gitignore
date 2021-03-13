@@ -4,3 +4,6 @@ CMakeListsPrivate.txt
 cmake-build-*/ 
 .idea/
 include/config.h
+
+.builder/
+configs/*.yml

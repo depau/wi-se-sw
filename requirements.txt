@@ -1,0 +1,4 @@
+pyyaml~=5.4.1
+frozendict~=1.2
+jinja2~=2.11.3
+pyjq~=2.5.1

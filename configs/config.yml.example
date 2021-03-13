@@ -1,0 +1,184 @@
+---
+
+#
+# Wi-Se firmware configuration
+#
+# Provided values are the defaults and they can be omitted.
+# Commented-out values also show the default value of each parameter, but most users won't need to change them
+#
+
+# Give it a name :)
+name: "Wi-Se"
+
+#
+# Board configuration
+#
+board:
+  # Board type. Available types:
+  # - generic                 for generic boards such as an ESP8266 breakout (you need to configure the LEDs)
+  # - wi-se-rpi-v0.1          Wi-Se Raspi Header v0.1
+  # - wi-se-opi4-v0,1         Wi-Se Orange Pi 4 v0,1
+  # - wi-se-rewirable-v0.1    Wi-Se Rewirable v0,1
+  type: generic
+  # LEDs need to be configured only for generic boards. For Wi-Se boards the LED config is baked-in
+  # See project homepage for LED meaning
+  leds:
+    wifi: 5
+    status: 13
+    tx: 14
+    rx: 12
+    # On/off timings in milliseconds for RX/TX LEDs
+    #on_time: 15
+    #off_time: 15
+
+  # CPU frequency in Hz. Overclocking it higher than this won't provide noticeable improvements. Don't fry your ESPs
+  #cpu_freq: 160000000
+
+
+#
+# Upload (flashing) configuration
+#
+upload:
+  # One of 'serial' or 'ota'. In order to use OTA you first need to flash the board through serial with OTA enabled.
+  method: serial
+
+  # Serial upload config
+  # Hint: you can keep both sections for convenience, and only change the method when needed
+  serial:
+    # i.e. /dev/ttyUSB#, /dev/ttyACM# on Linux, COM# on Windows
+    port: 'change/me'
+    # If flashing isn't successful at this rate, try with 460800
+    baud: 921600
+
+  # OTA upload config
+  ota:
+    # IP address of the board
+    address: '192.168.xx.xx'
+    # Password for OTA. You should set this to the same value as .ota.password, unless you are changing it
+    password: ''
+    # Optional host port. You can set this if you need to allow it in the firewall
+    #host_port: 8266
+
+
+#
+# UART (serial) configuration
+#
+uart:
+  # UART used for normal configuration
+  uart_comm:
+    # Serial object name to use (Serial or Serial1)
+    serial: Serial
+    baud: 115200
+    #config: '(UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)'
+
+  # UART used for debugging messages, if enabled
+  # It can be set to the same UART used for communication, in which case baud/config are ignored
+  uart_debug:
+    serial: Serial
+    baud: 115200
+    #config: '(UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)'
+
+  # Advanced UART configuration
+  advanced:
+    ## Buffering configuration - buffering is necessary. Don't reduce it unless you want terrible performance and data loss
+    ## Leave default values if unsure, so that any adjustment to the defaults in new firmware releases will be applied automatically
+    #rx_buf_size: 10240
+    #rx_soft_min: '(WS_SEND_BUF_SIZE * 3 / 2)'
+    #buffer_below_soft_min_dynamic_delay: '(std::min((int) (1000L * WS_SEND_BUF_SIZE * 8L * 2 / 3 / uartBaudRate), 5))'
+
+    # Automatic baud rate detection configuration
+    #autobaud:
+    #  # Max time in milliseconds the detection can run for
+    #  timeout: 10000
+    #  attempt_interval: 100
+
+    # Software flow control enables requesting the device connected to the UART to stop sending data when the Wi-Fi can't keep up.
+    # This will noticeably reduce the bandwidth during periods of high throughput, but it will increase reliability by orders of magnitude.
+    # Disable it if the device you're connecting does not support software flow control since in that case it will only make things worse.
+    flow_control:
+      enable: true
+      #low_watermark: 'UART_RX_SOFT_MIN + 1'
+      #high_watermark: 'WS_SEND_BUF_SIZE - 1'
+      #local_max_stop_time: 500
+      #heap_free_low_watermark: 4096
+      #heap_free_high_watermark: 10240
+      #ws_max_stop_time: 500
+
+
+#
+# Wireless network configuration
+#
+wifi:
+  # Wi-Fi mode. One of WIFI_STA (client mode), WIFI_AP (access point/hotspot)
+  mode: WIFI_AP
+  # Network name
+  # In AP mode it can be omitted or set to null, in which case it will be automatically generated.
+  # In STA mode it must be specified.
+  ssid: null
+  password: "ChangeMeASAP"
+  # Device hostname - customize
+  hostname: "Wi-Se"
+
+  # AP specific configuration
+  ap:
+    channel: 6
+    hide_ssid: false
+    max_clients: 6
+
+
+#
+# OTA (Over-The-Air, Wireless) update configuration
+#
+ota:
+  enable: false
+  # Password MUST be provided if OTA is enabled
+  password: ""
+  # Enable atomic updates. Atomic updates increase the flashing time by a few seconds and double the flashing-caused wear on the SPI flash
+  # However they will prevent bricking in case power is lost while an update is being installed.
+  #atomic: true
+
+
+#
+# Web server configuration
+#
+http:
+  port: 80
+  # HTTP authentication configuration
+  # Wi-Se uses the "Digest" authentication mechanism
+  auth:
+    enable: false
+    user: ""
+    password: ""
+
+
+#
+# WebSocket configuration
+#
+ws:
+  # The ESP8266 can safely handle up to 3 clients; more when UART throughput is low
+  max_clients: 3
+  # Ping interval used for detecting client disconnections and saving precious resources
+  #ping_interval: 300
+
+  #advanced:
+  #  buffer_size: 1536
+
+
+#
+# ttyd web terminal protocol configuration
+#
+ttyd:
+  # Configuration for the Web-based client. This may or may not affect other clients.
+  # You can specify any option documented here: https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/
+  web_config:
+    disableLeaveAlert: true
+
+
+#
+# Debugging configuration
+#
+#debug:
+#  # Enable debug strings on uart_debug
+#  enable: false
+#  # Also enable benchmarking debug strings
+#  benchmark: false
