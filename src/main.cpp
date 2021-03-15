@@ -106,8 +106,9 @@ void setup() {
         WiFi.softAP(wifiSsid, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
     }
 
-    //digitalWrite(LED_WIFI, HIGH); // too bright
-    analogWrite(LED_WIFI, 40);
+    // It turns out that PWMing the LED costs ~100kbps due to the fact that ESP8266 doesn't have hardware PWM
+    //analogWrite(LED_WIFI, 40);
+    digitalWrite(LED_WIFI, HIGH); // too bright
     digitalWrite(LED_STATUS, LOW);
 
     // Set-up Arduino OTA
