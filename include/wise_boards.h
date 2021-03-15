@@ -24,9 +24,7 @@
 
 #define LED_COUNT 4
 
-#if BOARD_TYPE == BOARD_WI_SE_OPI4_V01
-#define LED_ORDER {LED_WIFI, LED_STATUS, LED_TX, LED_RX};
-#else
+#ifndef LED_ORDER
 #define LED_ORDER {LED_WIFI, LED_STATUS, LED_RX, LED_TX};
 #endif
 
