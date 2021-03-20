@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import sys
+import textwrap
 import traceback
 from datetime import datetime
 from typing import Optional
@@ -511,6 +512,8 @@ def main():
             if file.endswith(".yml") and os.path.isfile(path):
                 configs[path] = load_config(path)
 
+    errors = {}
+
     for config, yml in configs.items():
         if allconfigs and yml.get('ignore_unless_requested', False):
             continue
@@ -534,8 +537,19 @@ def main():
             print(RESET_COLOR, end='', file=sys.stdout)
             print(RESET_COLOR, end='', file=sys.stderr)
             banner(f"FAILED - {builder.config_name}", COLOR_NOK)
-
+            errors[builder.config_name] = traceback.format_exc()
         print()
+
+    if len(errors) > 0:
+        print(COLOR_NOK + "FAILED BUILDS - Recap" + RESET_COLOR)
+        print()
+        for name, exc in errors.items():
+            print(COLOR_NOK + f"+ {name}" + RESET_COLOR)
+            print()
+            print(textwrap.indent(exc, ' ' * 4) + '\n')
+    else:
+        print()
+        print(COLOR_OK + "ALL BUILDS SUCCEEDED" + RESET_COLOR)
 
 
 if __name__ == "__main__":
