@@ -10,6 +10,9 @@
 # Give it a name :)
 name: "Wi-Se"
 
+# If enabled, builder.py will not use this configuration when building all configs. It will still use it if requested explicitly.
+ignore_unless_requested: false
+
 #
 # Board configuration
 #

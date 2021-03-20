@@ -322,12 +322,11 @@ class PlatformIOExtractor(Extractor):
 
 
 class Builder:
-    def __init__(self, config: str, debug: bool = False):
+    def __init__(self, config: str, yml: dict, debug: bool = False):
         self.config_file = config
         self.config_name = os.path.splitext(os.path.basename(config))[0]
         self.builder_dir = os.path.join(git_toplevel_dir(), ".builder", self.config_name)
-        with open(config) as f:
-            self.cfg = yaml.load(f, YamlLoader)
+        self.cfg = yml
         self.header_extr = ConfigHeaderExtractor(self.cfg, debug)
         self.pio_extr = PlatformIOExtractor(self.cfg, debug)
 
@@ -438,10 +437,15 @@ def banner(string, color=COLOR_INFO):
     print('=' + f" {color}{string}{RESET_COLOR} ".ljust(get_console_width() - 1, '='))
 
 
+def load_config(path: str) -> dict:
+    with open(path) as f:
+        return yaml.load(f, YamlLoader)
+
+
 def main():
     debug = False
-    jobs = nproc()
-    configs = []
+    configs = {}
+    allconfigs = False
 
     args = sys.argv.copy()
 
@@ -468,7 +472,8 @@ def main():
             debug = True
             args.pop(0)
         elif args[0] == "--example":
-            configs.append(os.path.join(git_toplevel_dir(), "configs/config.yml.example"))
+            path = os.path.join(git_toplevel_dir(), "configs/config.yml.example")
+            configs[path] = load_config(path)
             args.pop(0)
         elif args[0] == "--":
             sys.argv.pop(0)
@@ -496,17 +501,20 @@ def main():
         if not os.path.isfile(config):
             print(f"Config file does not exist: '{config}'", file=sys.stderr)
             usage()
-        configs.append(config)
+        configs[config] = load_config(config)
 
     if action in ('prepare', 'build', 'upload') and len(configs) == 0:
+        allconfigs = True
         cfgdir = os.path.join(git_toplevel_dir(), "configs")
         for file in os.listdir(cfgdir):
             path = os.path.join(cfgdir, file)
             if file.endswith(".yml") and os.path.isfile(path):
-                configs.append(path)
+                configs[path] = load_config(path)
 
-    for config in configs:
-        builder = Builder(config, debug)
+    for config, yml in configs.items():
+        if allconfigs and yml.get('ignore_unless_requested', False):
+            continue
+        builder = Builder(config, yml, debug)
         banner(f"RUNNING ACTION {action} FOR {builder.config_name}", COLOR_INFO)
 
         # noinspection PyBroadException
