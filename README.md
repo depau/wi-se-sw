@@ -22,6 +22,9 @@ should also work with Wi-Se.
 
 Wi-Se uses a superset of ttyd's protocol. Non Wi-Se-aware clients won't be able to use all features.
 
+Wistty can be used to control remote terminal configuration parameters. It is part of ttyc:
+https://github.com/Depau/ttyc
+
 ## Features
 
 - Web-based terminal based on Xterm.js
