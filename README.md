@@ -94,10 +94,10 @@ UART parameters can be changed at runtime, but the original configuration will b
 
 ## Changing UART parameters at runtime
 
-Ideally it should be implemented in the web page, but I don't know ReactJS (pull-requests welcome). An stty-like utility is in the
-works. `ttyc` supports setting the UART parameters.
+Ideally it should be implemented in the web page, but I don't know ReactJS (pull-requests welcome). `wistty` (part of `ttyc`) can be used
+to set them. `ttyc` supports setting the UART parameters directly.
 
-For now you can change the baud rate and the other parameters by sending an HTTP request:
+If you don't want to use `wistty` you can change the baud rate and the other parameters by sending an HTTP request:
 
 ```bash
 curl -X POST IP_ADDRESS/stty -H 'Content-Type: application/json' \
