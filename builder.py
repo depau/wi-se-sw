@@ -12,7 +12,7 @@ import traceback
 from datetime import datetime
 from typing import Optional
 
-import pyjq
+import jq as pyjq
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
@@ -45,7 +45,7 @@ class Extractor:
         self.cfg = cfg or {}
 
     def jq(self, path, default, c_string: bool = False, c_bool: bool = False):
-        ret = pyjq.first(path, self.cfg, default=default)
+        ret = pyjq.first(path, self.cfg)
         if ret is None:  # Default sometimes doesn't do what it's supposed to
             ret = default
         if c_bool:
