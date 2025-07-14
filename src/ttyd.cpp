@@ -14,8 +14,12 @@
 void TTY::shrinkBuffers() {
     UART_COMM.flush();
     UART_COMM.setRxBufferSize(256);
+#if UART_COMM_TX_EN >= 0
+    // Disable TX line to prevent debug message on boot.
+    digitalWrite(UART_COMM_TX_EN, HIGH);
+    delay(10);
+#endif
 }
-
 
 void TTY::stty(uint32_t baudrate, uint8_t config) {
     this->uartBaudRate = baudrate;
@@ -36,6 +40,12 @@ void TTY::stty(uint32_t baudrate, uint8_t config) {
     if (wsClientsLen > 0) {
         sendWindowTitle();
     }
+
+#if UART_COMM_TX_EN >= 0
+    // Enable TX line to allow transmission.
+    pinMode(UART_COMM_TX_EN, OUTPUT);
+    digitalWrite(UART_COMM_TX_EN, LOW);
+#endif
 }
 
 void TTY::markClientAuthenticated(uint32_t clientId) {

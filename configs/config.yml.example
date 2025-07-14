@@ -74,6 +74,18 @@ uart:
     baud: 115200
     #config: '(UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)'
 
+    # Additional gpio that can be used to disable debug output at boot time on tx line of serial 0.
+    # Below hardware is required:
+    # https://github.com/nopnop2002/esp8266-mqtt-uart-bridge?tab=readme-ov-file#add-a-circuit
+    #                 2 x Schottky diodes 1N5819 or BAS85 (1n4148 won't work!)
+    # 3v3 ---[1k]---,       /
+    # tx_en --------*---(>|)---,
+    # gnd ---[1k]--------------|
+    # esp8266_tx -------(>|)---*---> RX_TARGET
+    #
+    # NOTE: GPIO15 is pulled down and cannot be used for this.
+    tx_en: 5
+
   # UART used for debugging messages, if enabled
   # It can be set to the same UART used for communication, in which case baud/config are ignored
   uart_debug:

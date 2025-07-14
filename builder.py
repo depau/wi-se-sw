@@ -96,6 +96,10 @@ class ConfigHeaderExtractor(Extractor):
         return self.jq('.uart.uart_comm.config', '(UART_NB_BIT_8 | UART_PARITY_NONE | UART_NB_STOP_BIT_1)')
 
     @property
+    def UART_COMM_TX_EN(self):
+        return self.jq('.uart.uart_comm.tx_en', -1)
+
+    @property
     def UART_DEBUG(self):
         uart_nr = self.jq('.uart.uart_debug.serial', 0)
         return f"ExtSerial{uart_nr}"

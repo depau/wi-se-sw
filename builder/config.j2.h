@@ -26,6 +26,7 @@
 #define UART_COMM {{ cfg.UART_COMM }}
 #define UART_COMM_BAUD {{ cfg.UART_COMM_BAUD }}
 #define UART_COMM_CONFIG {{ cfg.UART_COMM_CONFIG }}
+#define UART_COMM_TX_EN {{ cfg.UART_COMM_TX_EN }}
 
 #define UART_DEBUG {{ cfg.UART_DEBUG }}
 #define UART_DEBUG_BAUD {{ cfg.UART_DEBUG_BAUD }}
