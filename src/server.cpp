@@ -38,10 +38,12 @@ void WiSeServer::begin() {
         if (!checkHttpBasicAuth(request)) return;
         request->send(200, "text/plain", String(ESP.getFreeHeap()));
     });
-    httpd->on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
+    httpd->on("/reset", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;
-        request->send(200, "text/plain", "");
-        ESP.reset();
+        request->redirect("/");
+        this->shouldReboot = true;
+        // Don't do it here - check loop() in main.cpp for details.
+        // ESP.reset();
     });
     httpd->on("/whoami", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;

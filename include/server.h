@@ -41,6 +41,7 @@ public:
     AsyncWebServer *httpd;
     AsyncWebSocket *websocket;
     TTY *ttyd;
+    bool shouldReboot = false;
 
     WiSeServer(char *token, AsyncWebServer *httpd, AsyncWebSocket *websocket, TTY *ttyd) :
             token{token},

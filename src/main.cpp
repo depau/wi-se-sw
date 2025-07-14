@@ -249,4 +249,21 @@ void loop() {
     yield();
     ttyd->performHousekeeping();
     yield();
+
+    // I don't know the real reason but this is a workaround when visitor visit /reset endpoit via browser.
+    // In firefox when I do it, esp restart itself and the browser try imidietly reconnect to websocet.
+    // It seams some time need to pass from reboot and between browser reconnection, or
+    // some other type of race condition happen.
+    // As a result ESP restart itself like 5 or 6 times until browser give up his attempts.
+    // This not happen when browser is open and you do reset by curl call.
+    if (server->shouldReboot) {
+        // UART_COMM.write("Restarting in 3 seconds...\r\n", 28);
+        delay(3000);
+        httpd->reset();
+        ttyd->shrinkBuffers();
+        server->end();
+        httpd->end();
+        // UART_COMM.write("Restart now!\r\n", 14);
+        ESP.restart();
+    }
 }
