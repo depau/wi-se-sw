@@ -19,8 +19,8 @@ String toString(const IPAddress &address) {
 void WiSeServer::begin() {
     DefaultHeaders::Instance().addHeader("Server", serverHeader);
     DefaultHeaders::Instance().addHeader("X-Ttyd-Implementation", "Wi-Se/C++");
-#ifdef CORS_ALLOW_ORIGIN
-    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", CORS_ALLOW_ORIGIN);
+#ifdef HTTP_CORS_ALLOW_ORIGIN
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", HTTP_CORS_ALLOW_ORIGIN);
 #endif
 
     // Handle regular HTTP requests
