@@ -230,8 +230,8 @@ void setup() {
         debugf("OTA server is up\r\n");
     }
 
-    MDNS.addService("http", "tcp", 80);
 #endif
+    MDNS.addService("http", "tcp", 80);
 }
 
 void loop() {
