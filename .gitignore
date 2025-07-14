@@ -7,3 +7,4 @@ include/config.h
 
 .builder/
 configs/*.yml
+platformio.ini
