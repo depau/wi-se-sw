@@ -165,6 +165,8 @@ http:
     user: ""
     password: ""
 
+  # CORS - set allowed domain or * to allow all origins
+  # cors_allow_origin: "*"
 
 #
 # WebSocket configuration

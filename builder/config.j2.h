@@ -59,8 +59,10 @@
 #define HTTP_AUTH_USER {{ cfg.HTTP_AUTH_USER }}
 #define HTTP_AUTH_PASS {{ cfg.HTTP_AUTH_PASS }}
 
-// CORS - Uncomment to allow all origins
-//#define CORS_ALLOW_ORIGI cfg.CORS_ALLOW_ORIGINN {
+{% if cfg.HTTP_CORS_ALLOW_ORIGIN is defined and cfg.HTTP_CORS_ALLOW_ORIGIN != None %}
+// CORS - define allowed origins
+#define HTTP_CORS_ALLOW_ORIGIN {{ cfg.HTTP_CORS_ALLOW_ORIGIN }}
+{% endif %}
 
 // WebSocket configuration
 #define WS_MAX_CLIENTS {{ cfg.WS_MAX_CLIENTS }}

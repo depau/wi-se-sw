@@ -178,6 +178,10 @@ class ConfigHeaderExtractor(Extractor):
         return self.jq('.http.auth.password', "", c_string=True)
 
     @property
+    def HTTP_CORS_ALLOW_ORIGIN(self):
+        return self.jq('.http.cors_allow_origin', None, c_string=True)
+
+    @property
     def WS_MAX_CLIENTS(self):
         return self.jq('.ws.max_clients', 3)
 
