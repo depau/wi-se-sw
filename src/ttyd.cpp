@@ -111,7 +111,7 @@ void TTY::sendWindowTitle(int64_t clientId) {
     windowTitle[0] = CMD_SET_WINDOW_TITLE;
     size_t titleLen = 1 + snprintWindowTitle(windowTitle + 1, 99);
     AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer((uint8_t *) windowTitle, titleLen);
-
+    if (!wsBuffer) return;
     if (clientId < 0) {
         broadcastBufferToClients(wsBuffer);
     } else {
@@ -303,6 +303,8 @@ void TTY::handleWebSocketPong(uint32_t clientId) {
 }
 
 void TTY::broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer) {
+    if (!wsBuffer) return;
+
     if (areAllClientsAuthenticated()) {
         // Fast no-copy path
         websocket->binaryAll(wsBuffer);
@@ -310,6 +312,7 @@ void TTY::broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer) {
         wsBuffer->lock();
         for (int i = 0; i < wsClientsLen; i++) {
             AsyncWebSocketClient *client = websocket->client(wsClients[i]);
+            if (!client) continue;
             if (client->status() == WS_CONNECTED) {
                 client->binary(wsBuffer);
             }
@@ -365,6 +368,7 @@ void TTY::flowControlWebSocketRequest(bool stop) {
     debugf("TTY ws flow control enabled: %d\r\n", stop);
     wsFlowControlStopped = stop;
     AsyncWebSocketMessageBuffer *buffer = websocket->makeBuffer(1);
+    if (!buffer) return;
     buffer->get()[0] = stop ? CMD_SERVER_PAUSE : CMD_SERVER_RESUME;
     broadcastBufferToClients(buffer);
 }
@@ -425,12 +429,17 @@ void TTY::performHousekeeping() {
 }
 
 bool TTY::wsCanSend() {
+    if (wsClientsLen == 0) {
+        return false;
+    }
+
     for (int i = 0; i < wsClientsLen; i++) {
         AsyncWebSocketClient *client = websocket->client(wsClients[i]);
-        if (client->status() == WS_CONNECTED && client->queueIsFull()) {
+        if ((!client) || (client->status() != WS_CONNECTED) || (client->queueIsFull())) {
             return false;
         }
     }
+
     return true;
 }
 
@@ -527,7 +536,6 @@ void TTY::autobaud() {
     }
 }
 
-
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
         // Unlock all flow control
@@ -569,8 +577,9 @@ void TTY::dispatchUart() {
     // +1 for ttyd command
     size_t bufsize = available + 1;
     AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer(bufsize);
+    if (!wsBuffer) return;
     char *buf = (char *) wsBuffer->get();
-
+    if (!buf) return;
     buf[0] = CMD_OUTPUT;
 
 //    uint8_t t1;
