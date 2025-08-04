@@ -89,6 +89,11 @@
 #define LED_ON_TIME {{ cfg.LED_ON_TIME }}
 #define LED_OFF_TIME {{ cfg.LED_OFF_TIME }}
 
+// GPIOs that can be used to control target system
+#define TARGET_GPIO_COUNT {{ cfg.TARGET_GPIO_COUNT }}
+#define TARGET_GPIO_INITS {{ cfg.TARGET_GPIO_INITS }}
+#define TARGET_GPIO_STRINGS {{ cfg.TARGET_GPIO_STRINGS }}
+
 // Advanced buffering parameters
 // Tweak if you feel brave. Report any improvements, but make sure you test them at 1500000 8N1 and that it works better
 // than the defaults before submitting.

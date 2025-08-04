@@ -37,6 +37,10 @@ BOARD_TYPES = {
     'wi-se-rewirable-v0.1': 3
 }
 
+class SafeDict(dict):
+    def get(self, key, default=None):
+        val = super().get(key, default)
+        return default if val is None else val
 
 # noinspection PyPep8Naming
 class Extractor:
@@ -219,6 +223,32 @@ class ConfigHeaderExtractor(Extractor):
     @property
     def LED_OFF_TIME(self):
         return self.jq('.board.leds.off_time', 15)
+
+    @property
+    def TARGET_GPIO_INITS(self):
+        jq = self.jq('.board.target', [])
+        l = []
+        for i,v in enumerate(jq):
+            v = SafeDict(v)
+            l.append("{%s, %s, %s, 0, &gpio_%s_dval, gpio_%s_name, gpio_%s_desc, gpio_%s_color}" % (v['gpio'], v.get('mode','INPUT'), str(v.get('inverted','false')).lower(), i, i, i, i))
+        return '\\\n%s\n' % ', \\\n'.join(l) if l else ''
+
+    @property
+    def TARGET_GPIO_STRINGS(self):
+        jq = self.jq('.board.target', [])
+        l = []
+        for i,v in enumerate(jq):
+            v = SafeDict(v)
+            l.append("const uint64_t gpio_%s_dval PROGMEM = %d;" % (i, v.get('dval', 0)))
+            l.append("const char gpio_%s_name[] PROGMEM = \"%s\";" % (i, v.get('name', "gpio%s" % v['gpio'])))
+            l.append("const char gpio_%s_desc[] PROGMEM = \"%s\";" % (i, v.get('desc', "GPIO %s" % v['gpio'])))
+            l.append("const char gpio_%s_color[] PROGMEM = \"%s\";" % (i, v.get('color', "limegreen")))
+        return '\\\n%s' % ' \\\n'.join(l) if l else ''
+
+    @property
+    def TARGET_GPIO_COUNT(self):
+        jq = self.jq('.board.target', [])
+        return '%s' % len(jq)
 
     @property
     def UART_RX_BUF_SIZE(self):

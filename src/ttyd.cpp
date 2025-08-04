@@ -123,6 +123,11 @@ void TTY::sendInitialMessages(uint32_t clientId) {
     debugf("TTY send initial message to %d\r\n", clientId);
     sendWindowTitle(clientId);
     sendClientConfiguration(clientId);
+#if TARGET_GPIO_COUNT > 0
+    // Force sending current GPIOs states
+    // in case of new client or reconnections.
+    sendGpioStates(CMD_SERVER_GPIO_STATES);
+#endif
 }
 
 bool TTY::isClientAuthenticated(uint32_t clientId) {
@@ -426,6 +431,9 @@ void TTY::performHousekeeping() {
         collectStats();
         lastStatsCollectMillis = millis();
     }
+#if TARGET_GPIO_COUNT > 0
+    sendGpioStates(0);
+#endif
 }
 
 bool TTY::wsCanSend() {
@@ -603,3 +611,41 @@ void TTY::dispatchUart() {
     broadcastBufferToClients(wsBuffer);
     //BENCH UART_DEBUG.printf("WSEND %dB time %lld\n", read, micros64() - t1);
 }
+
+#if TARGET_GPIO_COUNT > 0
+GpioConfig* TTY::getGpioConfigs() {
+    return gpioConfigs;
+}
+
+void TTY::sendGpioStates(char force) {
+    uint64_t now = millis();
+    char buf[TARGET_GPIO_COUNT + 1] = {0}; // {'G','D','E','A','D'};
+    buf[0] = force;
+
+    for (size_t i = 0; i < TARGET_GPIO_COUNT; i++) {
+        pinMode(gpioConfigs[i].gpio, gpioConfigs[i].mode);
+        // INPUTs
+        if (gpioConfigs[i].mode != OUTPUT) {
+            bool v = digitalRead(gpioConfigs[i].gpio) ^ gpioConfigs[i].inverted;
+            if (gpioConfigs[i].state != v) {
+                gpioConfigs[i].state = v;
+                buf[0] = CMD_SERVER_GPIO_STATES;
+            }
+        // OUTPUTs
+        } else {
+            // Time elapsed - reset gpio state
+            if (gpioConfigs[i].state > 1 && now >= gpioConfigs[i].state) {
+                gpioConfigs[i].state = 0;
+                buf[0] = CMD_SERVER_GPIO_STATES;
+            }
+            digitalWrite(gpioConfigs[i].gpio, (!!gpioConfigs[i].state) ^ gpioConfigs[i].inverted);
+        }
+        buf[i + 1] = gpioConfigs[i].state ? '1' : '0';
+    }
+    // Emit changes
+    if (buf[0] == CMD_SERVER_GPIO_STATES && wsCanSend()) {
+        if (AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer((uint8_t *) buf, TARGET_GPIO_COUNT + 1))
+            broadcastBufferToClients(wsBuffer);
+    }
+}
+#endif

@@ -26,6 +26,7 @@
 #define CMD_SERVER_PAUSE 'S'
 #define CMD_SERVER_RESUME 'Q'
 #define CMD_SERVER_DETECTED_BAUD 'B'
+#define CMD_SERVER_GPIO_STATES 'G'
 
 const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 
@@ -64,6 +65,19 @@ union led_blink_schedule_u {
     struct led_blink_schedule_t leds;
     uint64_t array[2];
 };
+
+struct GpioConfig {
+    uint8_t gpio;
+    uint8_t mode;
+    bool inverted;
+    uint64_t state;
+    const uint64_t* dval;
+    const char* name;
+    const char* desc;
+    const char* color;
+};
+
+TARGET_GPIO_STRINGS
 
 class TTY {
 private:
@@ -113,6 +127,11 @@ private:
     uint64_t txRate = 0;
     uint64_t rxRate = 0;
 
+    // GPIOs states and configuration
+    GpioConfig gpioConfigs[TARGET_GPIO_COUNT] = {
+        TARGET_GPIO_INITS
+    };
+
 public:
     explicit TTY(char *token, AsyncWebSocket *websocket) : token{token}, websocket{websocket} {}
 
@@ -154,6 +173,7 @@ public:
     
     bool isClientAuthenticated(uint32_t clientId);
 
+    GpioConfig* getGpioConfigs();
 private:
 
     int findClientIndex(uint32_t clientId) {
@@ -217,6 +237,8 @@ private:
     void unlockUartFlowControlIfTimedOut();
 
     void autobaud();
+
+    void sendGpioStates(char force);
 };
 
 #endif //WI_SE_SW_TTYD_H
