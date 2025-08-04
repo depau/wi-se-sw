@@ -230,8 +230,20 @@ ttyd:
 #
 # Debugging configuration
 #
-#debug:
-#  # Enable debug strings on uart_debug
-#  enable: false
-#  # Also enable benchmarking debug strings
-#  benchmark: false
+debug:
+  # Enable debug strings on uart_debug
+  enable: false
+
+  # Also enable benchmarking debug strings
+  # benchmark: false
+
+  # By default release build is used, but when you plan to use `pio debug` or `pio device monitor` then change it to debug!
+  # More info: https://docs.platformio.org/en/latest/projectconf/build_configurations.html
+  #            https://docs.platformio.org/en/latest/core/userguide/cmd_debug.html#cmd-debug
+  build_type: release
+
+  # Decoder used by `pio device monitor`
+  # By default it's autodetected based on used mcu, but you can overwrite it below.
+  # More info: https://docs.platformio.org/en/latest/core/userguide/device/cmd_monitor.html#cmd-device-monitor-filters
+  #            https://www.dzombak.com/blog/2021/10/esp8266-platformio-serial-console-monitoring-with-exception-decoding
+  # exception_decoder: esp8266_exception_decoder, default

@@ -310,6 +310,33 @@ class PlatformIOExtractor(Extractor):
         return self.jq('.ota.atomic', True)
 
     @property
+    def board_type(self):
+        board = self.jq('.board.type', 'generic')
+        if board == 'generic':
+            board = 'esp_wroom_02'
+        return board
+
+    @property
+    def board_mcu(self):
+        return 'esp8266'
+
+    @property
+    def platform(self):
+        return 'https://github.com/platformio/platform-espressif8266.git'
+
+    @property
+    def exception_decoder(self):
+        if self.board_mcu == 'esp8266':
+            decoder = 'esp8266_exception_decoder, default'
+        else:
+            decoder = 'direct'
+        return self.jq('.debug.exception_decoder', decoder)
+
+    @property
+    def build_type(self):
+        return self.jq('.debug.build_type', 'release')
+
+    @property
     def cpu_freq(self):
         freq = self.jq('.board.cpu_freq', 160000000) or 160000000
         return str(freq) + 'L'
@@ -331,6 +358,10 @@ class PlatformIOExtractor(Extractor):
     @property
     def serial_baud(self):
         return self.jq('.upload.serial.baud', 921600)
+
+    @property
+    def serial_debug_baud(self):
+        return self.jq('.uart.uart_debug.baud', 115200)
 
     @property
     def ota_address(self):
