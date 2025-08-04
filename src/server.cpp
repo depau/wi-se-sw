@@ -21,6 +21,8 @@ void WiSeServer::begin() {
     DefaultHeaders::Instance().addHeader("X-Ttyd-Implementation", "Wi-Se/C++");
 #ifdef HTTP_CORS_ALLOW_ORIGIN
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", HTTP_CORS_ALLOW_ORIGIN);
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 #endif
 
     // Handle regular HTTP requests
@@ -33,6 +35,13 @@ void WiSeServer::begin() {
               nullptr,
               std::bind(&WiSeServer::handleSttyBody, this, std::placeholders::_1, std::placeholders::_2,
                         std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+#if TARGET_GPIO_COUNT > 0
+    httpd->on("/gpio", HTTP_GET | HTTP_POST,
+              std::bind(&WiSeServer::handleGpioRequest, this, std::placeholders::_1),
+              nullptr,
+              std::bind(&WiSeServer::handleGpioBody, this, std::placeholders::_1, std::placeholders::_2,
+                        std::placeholders::_3, std::placeholders::_4, std::placeholders::_5));
+#endif
     httpd->on("/stats", HTTP_GET, std::bind(&WiSeServer::handleStatsRequest, this, std::placeholders::_1));
     httpd->on("/heap", HTTP_GET, [](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;
@@ -317,6 +326,76 @@ WiSeServer::handleSttyBody(
         sttySendResponse(request);
     }
 }
+
+#if TARGET_GPIO_COUNT > 0
+void WiSeServer::handleGpioRequest(AsyncWebServerRequest *request) const {
+    if (!checkHttpBasicAuth(request)) return;
+    if (request->method() != HTTP_GET) {
+        if (request->method() != HTTP_POST) {
+            request->send(405, "text/plain", "Method Not Allowed");
+        }
+        return;
+    }
+
+    AsyncResponseStream *response = request->beginResponseStream("application/json");
+    DynamicJsonDocument doc(200);
+    const GpioConfig* gpioConfigs = ttyd->getGpioConfigs();
+
+    for (size_t i = 0; i < TARGET_GPIO_COUNT; ++i) {
+        JsonObject obj = doc.add<JsonObject>();
+        obj["gpio"] = gpioConfigs[i].gpio;
+        obj["mode"] = gpioConfigs[i].mode;
+        obj["dval"] = *gpioConfigs[i].dval;
+        obj["state"] = gpioConfigs[i].state;
+        obj["name"] = (const __FlashStringHelper*)gpioConfigs[i].name;
+        obj["desc"] = (const __FlashStringHelper*)gpioConfigs[i].desc;
+        obj["color"] = (const __FlashStringHelper*)gpioConfigs[i].color;
+    }
+
+    serializeJson(doc, *response);
+    request->send(response);
+}
+
+void WiSeServer::handleGpioBody(
+        AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const {
+    if (!checkHttpBasicAuth(request)) return;
+    if (request->method() != HTTP_POST) {
+        if (request->method() != HTTP_GET) {
+            request->send(405, "text/plain", "Method Not Allowed");
+        }
+        return;
+    }
+
+    DynamicJsonDocument doc(200);
+    deserializeJson(doc, data, len);
+
+    if (doc.isNull()) {
+        return invalidJsonBadRequest(request, "JSON is invalid");
+    }
+
+    GpioConfig* gpioConfigs = ttyd->getGpioConfigs();
+
+    for (size_t i = 0; i < TARGET_GPIO_COUNT; i++) {
+        // OUTPUTs
+        if (gpioConfigs[i].mode == OUTPUT) {
+            if (doc.containsKey((const __FlashStringHelper*)gpioConfigs[i].name)) {
+                if (!doc[(const __FlashStringHelper*)gpioConfigs[i].name].is<unsigned int>()) {
+                    char buffer[50];
+                    snprintf(buffer, 50, "Value for gpio (%d) must be a positive number!", gpioConfigs[i].gpio);
+                    return invalidJsonBadRequest(request, buffer);
+                }
+                gpioConfigs[i].state = doc[(const __FlashStringHelper*)gpioConfigs[i].name];
+                // When the value is set above 1,
+                // set the time after which the port will be reset
+                if (gpioConfigs[i].state > 1){
+                    gpioConfigs[i].state += millis();
+                }
+            }
+        }
+    }
+    request->send(202);
+}
+#endif
 
 void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg,
                                   uint8_t *data, size_t len) {

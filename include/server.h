@@ -70,6 +70,9 @@ public:
 
     void handleToken(AsyncWebServerRequest *request) const;
 
+    void handleGpioRequest(AsyncWebServerRequest *request) const;
+
+    void handleGpioBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const;
 
     void
     onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data,
