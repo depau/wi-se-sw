@@ -26,6 +26,7 @@ const enum Command {
     OUTPUT = '0',
     SET_WINDOW_TITLE = '1',
     SET_PREFERENCES = '2',
+    GPIO_STATES = 'G',
 
     // client side
     INPUT = '0',
@@ -44,9 +45,13 @@ export interface ClientOptions {
 interface Props {
     id: string;
     wsUrl: string;
-    tokenUrl: string;
+    restUrl: string;
     clientOptions: ClientOptions;
     termOptions: ITerminalOptions;
+    onGpioStateUpdate: (gpioBits: boolean[]) => void;
+    onRx?: (value: boolean) => void;
+    onTx?: (value: boolean) => void;
+    onWsConnected?: (value: boolean) => void;
 }
 
 export class Xterm extends Component<Props> {
@@ -123,8 +128,8 @@ export class Xterm extends Component<Props> {
         } as FlowControl;
 
         return (
-            <div id={id} ref={c => (this.container = c)}>
-                <ZmodemAddon ref={c => (this.zmodemAddon = c)} sender={this.sendData} control={control} />
+            <div id={id} ref={c => { this.container = c; }}>
+                <ZmodemAddon ref={c => { this.zmodemAddon = c; }} sender={this.sendData} control={control} />
             </div>
         );
     }
@@ -153,13 +158,13 @@ export class Xterm extends Component<Props> {
     @bind
     private async refreshToken() {
         try {
-            const resp = await fetch(this.props.tokenUrl);
+            const resp = await fetch(this.props.restUrl+'/token');
             if (resp.ok) {
                 const json = await resp.json();
                 this.token = json.token;
             }
         } catch (e) {
-            console.error(`[ttyd] fetch ${this.props.tokenUrl}: `, e);
+            console.error(`[ttyd] fetch ${this.props.restUrl+'/token'}: `, e);
         }
     }
 
@@ -300,6 +305,7 @@ export class Xterm extends Component<Props> {
         this.applyOptions(this.props.clientOptions);
 
         terminal.focus();
+        this.props.onWsConnected?.(true);
     }
 
     @bind
@@ -313,6 +319,7 @@ export class Xterm extends Component<Props> {
         if (event.code !== 1000 && doBackoff && !backoffLock) {
             backoff.backoff();
         }
+        this.props.onWsConnected?.(false);
     }
 
     @bind
@@ -322,6 +329,7 @@ export class Xterm extends Component<Props> {
         if (doBackoff && !backoffLock) {
             backoff.backoff();
         }
+        this.props.onWsConnected?.(false);
     }
 
     @bind
@@ -334,6 +342,8 @@ export class Xterm extends Component<Props> {
         switch (cmd) {
             case Command.OUTPUT:
                 zmodemAddon.consume(data);
+                this.props.onRx?.(true);
+                setTimeout(() => this.props.onRx?.(false), 100);
                 break;
             case Command.SET_WINDOW_TITLE:
                 this.title = textDecoder.decode(data);
@@ -341,6 +351,12 @@ export class Xterm extends Component<Props> {
                 break;
             case Command.SET_PREFERENCES:
                 this.applyOptions(JSON.parse(textDecoder.decode(data)));
+                break;
+            case Command.GPIO_STATES:
+                const gpioBits = textDecoder.decode(data)
+                .split('')
+                .map(bit => bit === '1');
+                this.props.onGpioStateUpdate?.(gpioBits);
                 break;
             default:
                 console.warn(`[ttyd] unknown command: ${cmd}`);
@@ -367,6 +383,8 @@ export class Xterm extends Component<Props> {
         const { socket, textEncoder } = this;
         if (socket.readyState === WebSocket.OPEN) {
             socket.send(textEncoder.encode(Command.INPUT + data));
+            this.props.onTx?.(true);
+            setTimeout(() => this.props.onTx?.(false), 100);
         }
     }
 }
