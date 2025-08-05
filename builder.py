@@ -242,7 +242,7 @@ class ConfigHeaderExtractor(Extractor):
             l.append("const uint64_t gpio_%s_dval PROGMEM = %d;" % (i, v.get('dval', 0)))
             l.append("const char gpio_%s_name[] PROGMEM = \"%s\";" % (i, v.get('name', "gpio%s" % v['gpio'])))
             l.append("const char gpio_%s_desc[] PROGMEM = \"%s\";" % (i, v.get('desc', "GPIO %s" % v['gpio'])))
-            l.append("const char gpio_%s_color[] PROGMEM = \"%s\";" % (i, v.get('color', "limegreen")))
+            l.append("const char gpio_%s_color[] PROGMEM = \"%s\";" % (i, v.get('color', "#333" if v.get('mode','') == 'OUTPUT' else "limegreen")))
         return '\\\n%s' % ' \\\n'.join(l) if l else ''
 
     @property
