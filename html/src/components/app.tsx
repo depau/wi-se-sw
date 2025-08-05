@@ -2,16 +2,19 @@ import { h, Component } from 'preact';
 
 import { ITerminalOptions, ITheme } from 'xterm';
 import { ClientOptions, Xterm } from './terminal';
+import { HeaderBar } from './header/header-bar';
 
 if ((module as any).hot) {
     // tslint:disable-next-line:no-var-requires
     require('preact/debug');
 }
 
-const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const host = window.location.host;
 const path = window.location.pathname.replace(/[\/]+$/, '');
-const wsUrl = [protocol, '//', window.location.host, path, '/ws', window.location.search].join('');
-const tokenUrl = [window.location.protocol, '//', window.location.host, path, '/token'].join('');
+const restUrl = [window.location.protocol, '//', host, path].join('');
+const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const wsUrl = [wsProtocol, '//', host, path, '/ws', window.location.search].join('');
+
 const clientOptions = {
     rendererType: 'webgl',
     disableLeaveAlert: false,
@@ -45,15 +48,40 @@ const termOptions = {
 } as ITerminalOptions;
 
 export class App extends Component {
+    state = {
+        gpioStates: [] as boolean[],
+        rx: false,
+        tx: false,
+        wsConnected: false
+    };
+
+    setTx = (tx: boolean) => this.setState({ tx });
+    setRx = (rx: boolean) => this.setState({ rx });
+    setGpioStates = (gpioStates: boolean[]) => {this.setState({ gpioStates }); };
+    setWsConnected = (connected: boolean) => this.setState({ wsConnected: connected });
+
     render() {
         return (
-            <Xterm
-                id="terminal-container"
-                wsUrl={wsUrl}
-                tokenUrl={tokenUrl}
-                clientOptions={clientOptions}
-                termOptions={termOptions}
-            />
+            <div style="width: 100%; height: 100%;">
+                <HeaderBar
+                    gpioStates={this.state.gpioStates}
+                    restUrl={restUrl}
+                    rx={this.state.rx}
+                    tx={this.state.tx}
+                    wsConnected={this.state.wsConnected}
+                />
+                <Xterm
+                    id="terminal-container"
+                    wsUrl={wsUrl}
+                    restUrl={restUrl}
+                    clientOptions={clientOptions}
+                    termOptions={termOptions}
+                    onTx={this.setTx}
+                    onRx={this.setRx}
+                    onWsConnected={this.setWsConnected}
+                    onGpioStateUpdate={this.setGpioStates}
+                />
+            </div>
         );
     }
 }

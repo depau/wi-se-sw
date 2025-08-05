@@ -1,0 +1,59 @@
+.header-bar {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: #1e1e1e;
+    color: white;
+    gap: 12px;
+}
+
+.status-led {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: gray;
+}
+
+.status-led.connected {
+    background: limegreen;
+}
+
+.status-led.disconnected {
+    background: red;
+}
+
+button {
+    padding: 4px 10px;
+    background: #333;
+    border: 1px solid #555;
+    color: white;
+    cursor: pointer;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+    z-index: 0;
+}
+
+button::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: inherit;
+    border-radius: 4px;
+    transition: filter 0.3s ease;
+    z-index: -1;
+    filter: brightness(1);
+}
+
+button:hover::before {
+    filter: brightness(0.7);
+}
+
+.separator {
+    width: 1px;
+    height: 24px;
+    margin: 0 8px;
+    opacity: 0.6;
+    border-left: 1px dashed #999;
+    // background-color: #999;
+}

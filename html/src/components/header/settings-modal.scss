@@ -1,0 +1,81 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px 28px;
+  //padding: 24px 32px;
+  border-radius: 8px;
+  max-width: 480px;
+  //max-width: 400px;
+  max-height: 90vh;
+  width: 100%;
+  overflow-y: auto;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+  font-size: 13px;
+  line-height: 1.4;
+  color: #222;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 20px;
+  text-align: center;
+  color: #222;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.modal-buttons.single button {
+  margin-left: auto;
+}
+
+.modal-buttons button {
+  padding: 6px 16px;
+  font-size: 13px;
+  border: none;
+  border-radius: 4px;
+  background: #444;
+  color: white;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.modal-buttons button:hover {
+  background: #333;
+  //background: green;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 12px;
+  column-gap: 12px;
+  margin-bottom: 24px;
+}
+
+.form-grid label {
+  text-align: right;
+  padding-right: 8px;
+  line-height: 2;
+  color: #222;
+}
+
+.form-grid select {
+  width: 100%;
+  padding: 4px;
+}

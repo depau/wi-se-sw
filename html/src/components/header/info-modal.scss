@@ -1,0 +1,26 @@
+@import './settings-modal.scss';
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+
+  td {
+    padding: 4px 8px;
+    vertical-align: top;
+    color: #222;
+  }
+
+  td:first-child {
+    font-weight: bold;
+    text-align: right;
+    width: 40%;
+    padding-right: 12px;
+  }
+
+  td:last-child {
+    text-align: left;
+    width: 60%;
+  }
+}
+
