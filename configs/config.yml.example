@@ -1,5 +1,4 @@
 ---
-
 #
 # Wi-Se firmware configuration
 #
@@ -48,7 +47,7 @@ board:
     #   mode: INPUT
     #   name: power
     #   desc: Power
-    #   color: red
+    #   color: "#FFA500"
     # # Input status on target device, eg. moterboard power led.
     # - gpio: 14
     #   mode: INPUT_PULLUP
@@ -56,12 +55,21 @@ board:
     #   desc: Status LED
     #   color: "#FAFAD2"
     #   inverted: true
-    # # Output used to control power on target device, eg. moterboard ps_on button.
+    # # Output used to control power on target device, eg. moterboard ps_on button - short press.
     # - gpio: 4
     #   mode: OUTPUT
     #   name: ps_on
-    #   desc: Ps On
-    #   dval: 4000
+    #   desc: Power on
+    #   dval: 1000
+    #   color: "#04AA6D"
+    #   inverted: true
+    # # Output used to control power on target device, eg. moterboard ps_on button - long press.
+    # - gpio: 4
+    #   mode: OUTPUT
+    #   name: ps_off
+    #   desc: Power off
+    #   dval: 10000
+    #   color: red
     #   inverted: true
     # # Output to reset target board, eg, moterboard reset button.
     # - gpio: 12
@@ -72,7 +80,6 @@ board:
 
   # CPU frequency in Hz. Overclocking it higher than this won't provide noticeable improvements. Don't fry your ESPs
   #cpu_freq: 160000000
-
 
 #
 # Upload (flashing) configuration
@@ -97,7 +104,6 @@ upload:
     password: ''
     # Optional host port. You can set this if you need to allow it in the firewall
     #host_port: 8266
-
 
 #
 # UART (serial) configuration
@@ -155,7 +161,6 @@ uart:
       #heap_free_high_watermark: 10240
       #ws_max_stop_time: 500
 
-
 #
 # Wireless network configuration
 #
@@ -176,7 +181,6 @@ wifi:
     hide_ssid: false
     max_clients: 6
 
-
 #
 # OTA (Over-The-Air, Wireless) update configuration
 #
@@ -187,7 +191,6 @@ ota:
   # Enable atomic updates. Atomic updates increase the flashing time by a few seconds and double the flashing-caused wear on the SPI flash
   # However they will prevent bricking in case power is lost while an update is being installed.
   #atomic: true
-
 
 #
 # Web server configuration
@@ -216,7 +219,6 @@ ws:
   #advanced:
   #  buffer_size: 1536
 
-
 #
 # ttyd web terminal protocol configuration
 #
@@ -225,7 +227,6 @@ ttyd:
   # You can specify any option documented here: https://xtermjs.org/docs/api/terminal/interfaces/iterminaloptions/
   web_config:
     disableLeaveAlert: true
-
 
 #
 # Debugging configuration
