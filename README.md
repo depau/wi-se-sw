@@ -310,6 +310,15 @@ makes any difference.
 
 If you can't enable flow control on the connected device, try with low baud rates.
 
+Another issue can be in your browser and/or graphic driver.
+
+In my case I had to disable hardware acceleration in Firefox and restart it,  
+because not all characters were always visible in the terminal.
+
+Interestingly, after re-enabling hardware acceleration, the terminal still worked correctly.
+
+Always go to [xtermjs.org](https://xtermjs.org/) and check there that the terminal is displaying correctly.
+
 ### Bootlog send to terminal output
 
 In case of crashes or restarts, esp tends to send bootlog/stacktrace messages into uart output.
