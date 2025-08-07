@@ -215,6 +215,7 @@ export class Xterm extends Component<Props> {
             });
         }
         terminal.open(container);
+        terminal.attachCustomKeyEventHandler(this.onTerminalKeyEvent);
     }
 
     @bind
@@ -386,5 +387,26 @@ export class Xterm extends Component<Props> {
             this.props.onTx?.(true);
             setTimeout(() => this.props.onTx?.(false), 100);
         }
+    }
+
+    @bind
+    private onTerminalKeyEvent(event: KeyboardEvent): boolean {
+        if (event.ctrlKey && event.type === 'keydown') {
+            if (event.key.toLowerCase() === 'q') {
+                // console.log('[KEYDOWN] Ctrl+Q - unlock');
+                this.overlayAddon.showOverlay('Ctrl+Q - unlock', 500);
+            } else
+            if (event.key.toLowerCase() === '`') {
+                this.overlayAddon.showOverlay('Ctrl+` - unlock', 500);
+                // console.log('[KEYDOWN] Ctrl+` - unlock');
+                event.preventDefault();
+                this.sendData(Uint8Array.from([0x11])); // ASCII code for Ctrl+Q
+            } else
+            if (event.key.toLowerCase() === 's') {
+                // console.log('[KEYDOWN] Ctrl+S - lock');
+                this.overlayAddon.showOverlay('Ctrl+S - lock', 500);
+            }
+        }
+        return true;
     }
 }

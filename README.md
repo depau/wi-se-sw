@@ -271,7 +271,15 @@ If your application crashes frequently, you can use the following methods to fin
 ### Terminal is stuck
 
 You might have pressed `Ctrl`+`S` and triggered flow control by mistake. If you're using `ttyc` you can press `Ctrl`+`Q` to unlock it.  
-If you're using the web client, this will close the browser. Sorry :/ Again, PRs welcome ;)
+
+If you're using the web client, this can close the browser, depending on which one you use.
+
+Chrome browser seams to ignore `Ctrl`+`Q` and pass it like it is, at least Linux version.
+
+Firefox will ask you to close the page, but you can disable this shortcut.  
+Read more about how to do it on [how-to-disable-ctrlq-shortcut-in-firefox](https://superuser.com/questions/1318336/how-to-disable-ctrlq-shortcut-in-firefox-on-linux) thread.
+
+Current version of wi-se web client will send `Ctrl`+`Q` on each press of `Ctrl`+`` ` ``to unlock your terminal.
 
 Another possible reason is that the firmware crashed.  
 When the firmware crashes, the UART goes out of control until execution restart.  
