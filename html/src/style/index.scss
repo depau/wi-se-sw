@@ -1,18 +1,27 @@
 html,
 body {
   height: 100%;
-  min-height: 100%;
   margin: 0;
   overflow: hidden;
 }
 
-#terminal-container {
-  width: auto;
+#wrapper {
+  display: flex;
+  flex-direction: column;
   height: 100%;
-  margin: 0 auto;
-  padding: 0;
-  .terminal {
-    padding: 5px;
-    height: calc(100% - 10px);
-  }
 }
+
+#terminal-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+#terminal-container .terminal {
+  padding: 5px;
+  height: calc(100% - 10px);
+}
+
+// .xterm .xterm-screen canvas {
+//   //border: 1px solid red;
+//   border: 1px solid #666;
+// }
