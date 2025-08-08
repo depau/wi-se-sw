@@ -79,8 +79,8 @@ export function HeaderBar({ rx, tx, wsConnected, gpioStates, restUrl }: Props) {
 
     const controlButtons = gpioItems
         .filter(item => item.mode === 1)
-        .map(item => (
-            <button key={item.gpio} onClick={() => handleButtonClick(item)}
+        .map((item, index) => (
+            <button key={`btn-${index}-${item.name}`} onClick={() => handleButtonClick(item)}
                 style={{
                     background: item.color ? item.color : '#333',
                 }}
@@ -91,9 +91,9 @@ export function HeaderBar({ rx, tx, wsConnected, gpioStates, restUrl }: Props) {
 
     const ledIndicators = gpioItems
         .filter(item => item.mode === 2||item.mode === 0)
-        .map(item => (
+        .map((item, index) => (
             <div
-                key={item.gpio}
+                key={`led-${index}-${item.name}`}
                 className="status-led"
                 title={item.desc || item.name}
                 style={{
