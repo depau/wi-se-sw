@@ -4,7 +4,9 @@ https://github.com/tsl0922/ttyd/
 
 ## Prerequisites
 
-install [Yarn](https://yarnpkg.com), and run: `yarn install`.
+Install [Node.js](https://nodejs.org/en) v15.14.0, eg: `nvm install v15.14.0`.
+
+Install [Yarn](https://yarnpkg.com), and run: `yarn install`.
 
 ## Development
 
@@ -13,4 +15,4 @@ install [Yarn](https://yarnpkg.com), and run: `yarn install`.
 
 ## Publish
 
-Run `yarn run build`, this will compile the inlined html to `../src/html.h`.
+Run `yarn run build`, this will compile the inlined html to `../include/html.h`.
