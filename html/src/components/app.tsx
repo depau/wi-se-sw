@@ -10,7 +10,7 @@ if ((module as any).hot) {
 }
 
 const host = window.location.host;
-const path = window.location.pathname.replace(/[\/]+$/, '');
+const path = window.location.pathname.replace(/[/]+$/, '');
 const restUrl = [window.location.protocol, '//', host, path].join('');
 const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const wsUrl = [wsProtocol, '//', host, path, '/ws', window.location.search].join('');
@@ -52,12 +52,14 @@ export class App extends Component {
         gpioStates: [] as boolean[],
         rx: false,
         tx: false,
-        wsConnected: false
+        wsConnected: false,
     };
 
     setTx = (tx: boolean) => this.setState({ tx });
     setRx = (rx: boolean) => this.setState({ rx });
-    setGpioStates = (gpioStates: boolean[]) => {this.setState({ gpioStates }); };
+    setGpioStates = (gpioStates: boolean[]) => {
+        this.setState({ gpioStates });
+    };
     setWsConnected = (connected: boolean) => this.setState({ wsConnected: connected });
 
     render() {
