@@ -21,14 +21,14 @@ declare global {
     }
 }
 
-const enum Command {
-    // server side
+const enum ServerCommand {
     OUTPUT = '0',
     SET_WINDOW_TITLE = '1',
     SET_PREFERENCES = '2',
     GPIO_STATES = 'G',
+}
 
-    // client side
+const enum ClientCommand {
     INPUT = '0',
     RESIZE_TERMINAL = '1',
     PAUSE = '2',
@@ -128,8 +128,19 @@ export class Xterm extends Component<Props> {
         } as FlowControl;
 
         return (
-            <div id={id} ref={c => { this.container = c; }}>
-                <ZmodemAddon ref={c => { this.zmodemAddon = c; }} sender={this.sendData} control={control} />
+            <div
+                id={id}
+                ref={c => {
+                    this.container = c;
+                }}
+            >
+                <ZmodemAddon
+                    ref={c => {
+                        this.zmodemAddon = c;
+                    }}
+                    sender={this.sendData}
+                    control={control}
+                />
             </div>
         );
     }
@@ -137,20 +148,20 @@ export class Xterm extends Component<Props> {
     @bind
     private pause() {
         const { textEncoder, socket } = this;
-        socket.send(textEncoder.encode(Command.PAUSE));
+        socket.send(textEncoder.encode(ClientCommand.PAUSE));
     }
 
     @bind
     private resume() {
         const { textEncoder, socket } = this;
-        socket.send(textEncoder.encode(Command.RESUME));
+        socket.send(textEncoder.encode(ClientCommand.RESUME));
     }
 
     @bind
     private sendData(data: ArrayLike<number>) {
         const { socket } = this;
         const payload = new Uint8Array(data.length + 1);
-        payload[0] = Command.INPUT.charCodeAt(0);
+        payload[0] = ClientCommand.INPUT.charCodeAt(0);
         payload.set(data, 1);
         socket.send(payload);
     }
@@ -158,13 +169,13 @@ export class Xterm extends Component<Props> {
     @bind
     private async refreshToken() {
         try {
-            const resp = await fetch(this.props.restUrl+'/token');
+            const resp = await fetch(this.props.restUrl + '/token');
             if (resp.ok) {
                 const json = await resp.json();
                 this.token = json.token;
             }
         } catch (e) {
-            console.error(`[ttyd] fetch ${this.props.restUrl+'/token'}: `, e);
+            console.error(`[ttyd] fetch ${this.props.restUrl + '/token'}: `, e);
         }
     }
 
@@ -176,10 +187,10 @@ export class Xterm extends Component<Props> {
     }
 
     @bind
-    private onWindowUnload(event: BeforeUnloadEvent): any {
+    private onWindowUnload(event: BeforeUnloadEvent): string | void {
         const { socket } = this;
         if (socket && socket.readyState === WebSocket.OPEN) {
-            const message = 'Close terminal? this will also terminate the command.';
+            const message = 'Close terminal? This will also terminate the command.';
             event.returnValue = message;
             return message;
         }
@@ -237,7 +248,7 @@ export class Xterm extends Component<Props> {
             try {
                 const canvas = document.createElement('canvas');
                 return !!(window.WebGL2RenderingContext && canvas.getContext('webgl2'));
-            } catch (e) {
+            } catch {
                 return false;
             }
         };
@@ -341,24 +352,26 @@ export class Xterm extends Component<Props> {
         const data = rawData.slice(1);
 
         switch (cmd) {
-            case Command.OUTPUT:
+            case ServerCommand.OUTPUT:
                 zmodemAddon.consume(data);
                 this.props.onRx?.(true);
                 setTimeout(() => this.props.onRx?.(false), 100);
                 break;
-            case Command.SET_WINDOW_TITLE:
+            case ServerCommand.SET_WINDOW_TITLE:
                 this.title = textDecoder.decode(data);
                 document.title = this.title;
                 break;
-            case Command.SET_PREFERENCES:
+            case ServerCommand.SET_PREFERENCES:
                 this.applyOptions(JSON.parse(textDecoder.decode(data)));
                 break;
-            case Command.GPIO_STATES:
-                const gpioBits = textDecoder.decode(data)
-                .split('')
-                .map(bit => bit === '1');
+            case ServerCommand.GPIO_STATES: {
+                const gpioBits = textDecoder
+                    .decode(data)
+                    .split('')
+                    .map(bit => bit === '1');
                 this.props.onGpioStateUpdate?.(gpioBits);
                 break;
+            }
             default:
                 console.warn(`[ttyd] unknown command: ${cmd}`);
                 break;
@@ -370,7 +383,7 @@ export class Xterm extends Component<Props> {
         const { overlayAddon, socket, textEncoder, resizeOverlay } = this;
         if (socket.readyState === WebSocket.OPEN) {
             const msg = JSON.stringify({ columns: size.cols, rows: size.rows });
-            socket.send(textEncoder.encode(Command.RESIZE_TERMINAL + msg));
+            socket.send(textEncoder.encode(ClientCommand.RESIZE_TERMINAL + msg));
         }
         if (resizeOverlay) {
             setTimeout(() => {
@@ -383,7 +396,7 @@ export class Xterm extends Component<Props> {
     private onTerminalData(data: string) {
         const { socket, textEncoder } = this;
         if (socket.readyState === WebSocket.OPEN) {
-            socket.send(textEncoder.encode(Command.INPUT + data));
+            socket.send(textEncoder.encode(ClientCommand.INPUT + data));
             this.props.onTx?.(true);
             setTimeout(() => this.props.onTx?.(false), 100);
         }
@@ -395,14 +408,12 @@ export class Xterm extends Component<Props> {
             if (event.key.toLowerCase() === 'q') {
                 // console.log('[KEYDOWN] Ctrl+Q - unlock');
                 this.overlayAddon.showOverlay('Ctrl+Q - unlock', 500);
-            } else
-            if (event.key.toLowerCase() === '`') {
+            } else if (event.key.toLowerCase() === '`') {
                 this.overlayAddon.showOverlay('Ctrl+` - unlock', 500);
                 // console.log('[KEYDOWN] Ctrl+` - unlock');
                 event.preventDefault();
                 this.sendData(Uint8Array.from([0x11])); // ASCII code for Ctrl+Q
-            } else
-            if (event.key.toLowerCase() === 's') {
+            } else if (event.key.toLowerCase() === 's') {
                 // console.log('[KEYDOWN] Ctrl+S - lock');
                 this.overlayAddon.showOverlay('Ctrl+S - lock', 500);
             }

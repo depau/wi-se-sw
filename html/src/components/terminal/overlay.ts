@@ -60,14 +60,13 @@ position: absolute;
             return;
         }
 
-        const self = this;
-        self.overlayTimeout = setTimeout(() => {
+        this.overlayTimeout = setTimeout(() => {
             overlayNode.style.opacity = '0';
-            self.overlayTimeout = setTimeout(() => {
+            this.overlayTimeout = setTimeout(() => {
                 if (overlayNode.parentNode) {
                     overlayNode.parentNode.removeChild(overlayNode);
                 }
-                self.overlayTimeout = null;
+                this.overlayTimeout = null;
                 overlayNode.style.opacity = '0.75';
             }, 200) as any;
         }, timeout || 1500) as any;
