@@ -14,6 +14,7 @@
     "start": "webpack serve",
     "build": "NODE_ENV=production webpack && gulp",
     "inline": "NODE_ENV=production webpack && gulp inline",
+    "fakeesp": "node fakeesp.js",
     "check": "gts check",
     "fix": "gts fix"
   },
@@ -53,7 +54,10 @@
     "webpack": "4.46.0",
     "webpack-cli": "^4.4.0",
     "webpack-dev-server": "^3.11.2",
-    "webpack-merge": "^5.7.3"
+    "webpack-merge": "^5.7.3",
+    "express": "^4.17.1",
+    "cors": "^2.8.5",
+    "ws": "^8.18.3"
   },
   "dependencies": {
     "backoff": "^2.5.0",
@@ -66,5 +70,11 @@
     "xterm-addon-web-links": "^0.4.0",
     "xterm-addon-webgl": "^0.9.0",
     "zmodem.js": "^0.1.10"
+  },
+  "resolutions": {
+    "globule": "^1.0.0",
+    "minimatch": "3.0.4",
+    "@types/node": "14.14.17",
+    "@types/minimatch": "3.0.3"
   }
 }
