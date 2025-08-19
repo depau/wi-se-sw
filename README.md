@@ -85,24 +85,41 @@ run `./builder.py devconf --example` to generate the headers in-place.
 
 ## Building frontend
 
-To build the frontend, you need to follow these steps:
+To build the frontend, and use real esp board you need to follow these steps:
 
-  - Install required packages and start local server
-      ```
-      cd /html
-      nvm install v15.14.0
-      yarn install
-      yarn run start
-      ```
-  - Change host variable in `html/src/components/app.tsx`
+  - Install required packages.
+    ```
+    cd /html
+    nvm install v15.14.0
+    yarn install
+    ```
+  - For direct connections change host variable in `html/src/components/app.tsx`
     ```
     // Set to IP of your board!
     const host = window.location.host;
     ```
+  - For proxy connections change target in `html/webpack.config.js` (if you don't touch above host variable!)
+    ```
+    // Set http://IP:PORT of your board in
+    // devConfig.devServer.proxy.target
+    proxy: [{
+        context: [ '/token', '/stty', '/gpio', '/stats', '/heap', '/reset', '/whoami', '/ws' ],
+        target: 'http://localhost:7681',
+        ws: true
+    }]
+    ```
   - Uncomment `cors_allow_origin: "*"` in configuration file and reflash esp.
+  - Start frontend server and proxy by `yarn run start`
   - Do other changes in `/html` directory.
-  - After completing the work, restore the above host variable and cors settings.
+  - After completing the work, restore the above host/target variable and cors settings.
   - Run `yarn run build`, to compile the inlined html to `../src/html.h`.
+
+To build the frontend, and use fakeesp.js test server you should follow these steps:
+
+  - Install required packages like above.
+  - Start frontend server and proxy by `yarn run start`
+  - Start backend server by `yarn run fakeesp`
+  - Do other changes in `/html` directory and run `yarn run build` at the end.
 
 ## Configuration
 
