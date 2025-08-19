@@ -45,16 +45,22 @@ export function InfoModal({ restUrl, onClose }: Props) {
                             {renderRow('Name', info.pretty_name)}
                             {renderRow('Hostname', info.hostname)}
                             {renderRow('Board', info.board)}
-                            {renderRow('SoC', info.soc?.type)}
-                            {renderRow('Chip ID', info.soc?.chipId)}
-                            {renderRow('SDK/Core', info.soc?.sdk)}
-                            {renderRow('Firmware', `${info.software?.implementation} ${info.software?.version}`)}
-                            {renderRow('Voltage (V)', info.health?.vccVoltage)}
-                            {renderRow('Free Heap (B)', info.health?.heapFree)}
-                            {renderRow('WiFi SSID', info.net?.ssid)}
-                            {renderRow('IP', info.net?.ip)}
-                            {renderRow('MAC', info.net?.macAddr)}
-                            {renderRow('RSSI (dBm)', info.net?.rssi)}
+                            {renderRow('SoC', info.soc.type)}
+                            {renderRow('Chip ID', info.soc.chipId)}
+                            {renderRow('SDK/Core', info.soc.sdk)}
+                            {renderRow('Clock (MHz)', info.soc.mhz)}
+                            {renderRow('Firmware', `${info.software.implementation} ${info.software.version}`)}
+                            {renderRow('Voltage (V)', info.health.vccVoltage)}
+                            {renderRow('Free Heap (B)', info.health.heapFree)}
+                            {renderRow('Frag Heap (B)', info.health.heapFrag)}
+                            {renderRow('WiFi Mode', info.net.wifiMode)}
+                            {renderRow('WiFi SSID', info.net.ssid)}
+                            {renderRow('WiFi BSSID', info.net.bssid)}
+                            {renderRow('IP', info.net.ip)}
+                            {renderRow('MAC', info.net.macAddr)}
+                            {renderRow('Netmask', info.net.netmask)}
+                            {renderRow('Gateway', info.net.gateway)}
+                            {renderRow('RSSI (dBm)', info.net.rssi)}
                         </tbody>
                     </table>
                 )}
