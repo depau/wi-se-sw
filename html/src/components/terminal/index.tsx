@@ -49,9 +49,9 @@ interface Props {
     clientOptions: ClientOptions;
     termOptions: ITerminalOptions;
     onGpioStateUpdate: (gpioBits: boolean[]) => void;
-    onRx?: (value: boolean) => void;
-    onTx?: (value: boolean) => void;
-    onWsConnected?: (value: boolean) => void;
+    onRx: (value: boolean) => void;
+    onTx: (value: boolean) => void;
+    onWsConnected: (value: boolean) => void;
 }
 
 export class Xterm extends Component<Props> {
@@ -317,7 +317,7 @@ export class Xterm extends Component<Props> {
         this.applyOptions(this.props.clientOptions);
 
         terminal.focus();
-        this.props.onWsConnected?.(true);
+        this.props.onWsConnected(true);
     }
 
     @bind
@@ -331,7 +331,7 @@ export class Xterm extends Component<Props> {
         if (event.code !== 1000 && doBackoff && !backoffLock) {
             backoff.backoff();
         }
-        this.props.onWsConnected?.(false);
+        this.props.onWsConnected(false);
     }
 
     @bind
@@ -341,7 +341,7 @@ export class Xterm extends Component<Props> {
         if (doBackoff && !backoffLock) {
             backoff.backoff();
         }
-        this.props.onWsConnected?.(false);
+        this.props.onWsConnected(false);
     }
 
     @bind
@@ -354,8 +354,8 @@ export class Xterm extends Component<Props> {
         switch (cmd) {
             case ServerCommand.OUTPUT:
                 zmodemAddon.consume(data);
-                this.props.onRx?.(true);
-                setTimeout(() => this.props.onRx?.(false), 100);
+                this.props.onRx(true);
+                setTimeout(() => this.props.onRx(false), 100);
                 break;
             case ServerCommand.SET_WINDOW_TITLE:
                 this.title = textDecoder.decode(data);
@@ -369,7 +369,7 @@ export class Xterm extends Component<Props> {
                     .decode(data)
                     .split('')
                     .map(bit => bit === '1');
-                this.props.onGpioStateUpdate?.(gpioBits);
+                this.props.onGpioStateUpdate(gpioBits);
                 break;
             }
             default:
@@ -397,8 +397,8 @@ export class Xterm extends Component<Props> {
         const { socket, textEncoder } = this;
         if (socket.readyState === WebSocket.OPEN) {
             socket.send(textEncoder.encode(ClientCommand.INPUT + data));
-            this.props.onTx?.(true);
-            setTimeout(() => this.props.onTx?.(false), 100);
+            this.props.onTx(true);
+            setTimeout(() => this.props.onTx(false), 100);
         }
     }
 

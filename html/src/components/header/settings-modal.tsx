@@ -90,7 +90,10 @@ export function SettingsModal({ restUrl, onClose }: Props) {
                     </select>
 
                     <label>Parity:</label>
-                    <select value={config.parity ?? ''} onChange={e => handleChange('parity', e.currentTarget.value)}>
+                    <select
+                        value={config.parity !== null ? config.parity : ''}
+                        onChange={e => handleChange('parity', e.currentTarget.value)}
+                    >
                         <option value="">None</option>
                         <option value="0">Even</option>
                         <option value="1">Odd</option>

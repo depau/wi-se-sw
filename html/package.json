@@ -72,6 +72,7 @@
     "zmodem.js": "^0.1.10"
   },
   "resolutions": {
+    "glob": "7.1.6",
     "globule": "^1.0.0",
     "minimatch": "3.0.4",
     "@types/node": "14.14.17",
