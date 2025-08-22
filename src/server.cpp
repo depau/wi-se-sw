@@ -50,7 +50,9 @@ void WiSeServer::begin() {
     httpd->on("/reset", HTTP_GET, [this](AsyncWebServerRequest *request) {
         if (!checkHttpBasicAuth(request)) return;
         request->redirect("/");
-        this->shouldReboot = true;
+        // Schedule reboot and let clients know about it.
+        this->shouldReboot = millis() + 1000;
+        end();
         // Don't do it here - check loop() in main.cpp for details.
         // ESP.reset();
     });
@@ -118,6 +120,7 @@ void WiSeServer::begin() {
 void WiSeServer::end() const {
     websocket->enable(false);
     websocket->closeAll();
+    ttyd->shrinkBuffers();
 }
 
 bool WiSeServer::checkHttpBasicAuth(AsyncWebServerRequest *request) {
@@ -135,6 +138,7 @@ void WiSeServer::handleIndex(AsyncWebServerRequest *request) {
     if (!checkHttpBasicAuth(request)) return;
     debugf("GET /\r\n");
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, index_html_len);
+    // response->addHeader("X-FreeHeap", String(ESP.getFreeHeap()));
     response->addHeader("Content-Encoding", "gzip");
     request->send(response);
 }
@@ -425,10 +429,10 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
         case WS_EVT_ERROR:
             debugf("WS client error [%u] error(%u): %s\r\n", client->id(), *((uint16_t *) arg), (char *) data);
             client->printf(R"({"error": "%u: %s"})", *((uint16_t *) arg), (char *) data);
-//            ttyd->removeClient(client->id());
-//            client->close(WS_CLOSE_BAD_CONDITION);
-//            websocket->cleanupClients(WS_MAX_CLIENTS);
-//            deallocClientDataBuffer(client->id());
+            // ttyd->removeClient(client->id());
+            // client->close(WS_CLOSE_BAD_CONDITION);
+            // websocket->cleanupClients(WS_MAX_CLIENTS);
+            // deallocClientDataBuffer(client->id());
             break;
         case WS_EVT_PONG:
             debugf("WS client pong %d\r\n", client->id());

@@ -138,7 +138,6 @@ void setup() {
 
             delay(50);
 
-            ttyd->shrinkBuffers();
             server->end();
             httpd->end();
 
@@ -256,14 +255,12 @@ void loop() {
     // some other type of race condition happen.
     // As a result ESP restart itself like 5 or 6 times until browser give up his attempts.
     // This not happen when browser is open and you do reset by curl call.
-    if (server->shouldReboot) {
-        // UART_COMM.write("Restarting in 3 seconds...\r\n", 28);
-        delay(3000);
+    // Now, by using schedule_function in sendInitialMessages of ttyd.cpp seams to solve above issue,
+    // but I decided to keep below code for clean restarts.
+    if (server->shouldReboot > 0 &&  millis() > server->shouldReboot) {
         httpd->reset();
-        ttyd->shrinkBuffers();
         server->end();
         httpd->end();
-        // UART_COMM.write("Restart now!\r\n", 14);
         ESP.restart();
     }
 }
