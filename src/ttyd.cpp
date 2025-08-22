@@ -3,6 +3,7 @@
 //
 
 #include <ArduinoJson.h>
+#include <Schedule.h>
 #include <cstdio>
 #include <debug.h>
 
@@ -17,7 +18,6 @@ void TTY::shrinkBuffers() {
 #if UART_COMM_TX_EN >= 0
     // Disable TX line to prevent debug message on boot.
     digitalWrite(UART_COMM_TX_EN, HIGH);
-    delay(10);
 #endif
 }
 
@@ -121,12 +121,22 @@ void TTY::sendWindowTitle(int64_t clientId) {
 
 void TTY::sendInitialMessages(uint32_t clientId) {
     debugf("TTY send initial message to %d\r\n", clientId);
-    sendWindowTitle(clientId);
-    sendClientConfiguration(clientId);
+    // Using schedule_function seams to fix all esp crash
+    // during intensive browser page refresh.
+    schedule_function([this, clientId]() {
+        sendWindowTitle(clientId);
+    });
+
+    schedule_function([this, clientId]() {
+        sendClientConfiguration(clientId);
+    });
+
 #if TARGET_GPIO_COUNT > 0
     // Force sending current GPIOs states
     // in case of new client or reconnections.
-    sendGpioStates(CMD_SERVER_GPIO_STATES);
+    schedule_function([this]() {
+        sendGpioStates(CMD_SERVER_GPIO_STATES);
+    });
 #endif
 }
 
