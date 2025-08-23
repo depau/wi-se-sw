@@ -8,6 +8,7 @@
 #include "ttyd.h"
 #include "debug.h"
 #include "version.h"
+#include "ExtendedSerial.h"
 
 #define MASK_UART_PARITY  0B00000011
 #define MASK_UART_BITS    0B00001100
