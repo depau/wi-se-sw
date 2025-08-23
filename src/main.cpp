@@ -34,7 +34,7 @@ void blinkError() {
 }
 
 void setup() {
-    // Generate token
+    // Generate token.
     if (HTTP_AUTH_ENABLE) {
         const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
         for (int i = 0; i < HTTP_AUTH_TOKEN_LEN; i++) {
@@ -47,7 +47,7 @@ void setup() {
     ttyd = new TTY(token, websocket);
     server = new WiSeServer(token, httpd, websocket, ttyd);
 
-    // Init UART
+    // Init UART.
     ttyd->stty(UART_COMM_BAUD, UART_COMM_CONFIG);
 
 #if ENABLE_DEBUG == 1
@@ -56,7 +56,7 @@ void setup() {
     }
 #endif
 
-    // Init LEDs
+    // Init LEDs.
     pinMode(LED_WIFI, OUTPUT);
     pinMode(LED_STATUS, OUTPUT);
     pinMode(LED_RX, OUTPUT);
@@ -67,7 +67,7 @@ void setup() {
     digitalWrite(LED_TX, LOW);
     digitalWrite(LED_STATUS, HIGH);
 
-    // Init Wi-Fi
+    // Init Wi-Fi.
     WiFi.mode(WIFI_MODE);
     WiFi.hostname(WIFI_HOSTNAME);
 
@@ -106,15 +106,14 @@ void setup() {
         WiFi.softAP(wifiSsid, WIFI_PASS, WIFI_CHANNEL, WIFI_HIDE_SSID, WIFI_MAX_DEVICES);
     }
 
-    // It turns out that PWMing the LED costs ~100kbps due to the fact that ESP8266 doesn't have hardware PWM
-    //analogWrite(LED_WIFI, 40);
+    // It turns out that PWMing the LED costs ~100kbps due to the fact that ESP8266 doesn't have hardware PWM.
+    // analogWrite(LED_WIFI, 40);
     digitalWrite(LED_WIFI, HIGH); // too bright
     digitalWrite(LED_STATUS, LOW);
 
     // Set-up Arduino OTA
     // TODO: actually do it
     // ArduinoOTA.setHostname(WIFI_HOSTNAME);
-
 
     server->begin();
     httpd->begin();
@@ -141,7 +140,7 @@ void setup() {
             server->end();
             httpd->end();
 
-            // LED animation
+            // LED animation.
             uint8_t leds[LED_COUNT] = LED_ORDER;
 
             for (int count = 0; count < 2; count++) {
@@ -170,7 +169,7 @@ void setup() {
         });
 
         ArduinoOTA.onProgress([](uint32_t progress, uint32_t total) {
-            // Use LEDs as progress bar
+            // Use LEDs as progress bar.
             uint8_t leds[LED_COUNT] = LED_ORDER;
             uint32_t ledThresh = total / LED_COUNT + 1;
             uint8_t curLed = progress / ledThresh;
@@ -220,7 +219,7 @@ void setup() {
                     debugf("END\r\n"); break;
             }
 
-            // Blink red LEDs, then reset
+            // Blink red LEDs, then reset.
             blinkError();
             ESP.reset();
         });
@@ -251,8 +250,8 @@ void loop() {
 
     // I don't know the real reason but this is a workaround when visitor visit /reset endpoit via browser.
     // In firefox when I do it, esp restart itself and the browser try imidietly reconnect to websocet.
-    // It seams some time need to pass from reboot and between browser reconnection, or
-    // some other type of race condition happen.
+    // It seams some time need to pass from reboot and between browser reconnection,
+    // or some other type of race condition happen.
     // As a result ESP restart itself like 5 or 6 times until browser give up his attempts.
     // This not happen when browser is open and you do reset by curl call.
     // Now, by using schedule_function in sendInitialMessages of ttyd.cpp seams to solve above issue,

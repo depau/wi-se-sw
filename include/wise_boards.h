@@ -20,7 +20,7 @@
 #define LED_STATUS 14
 #define LED_TX 13
 #define LED_RX 12
-#endif //BOARD_TYPE
+#endif // BOARD_TYPE
 
 #define LED_COUNT 4
 
@@ -40,4 +40,4 @@
 #define BOARD_NAME "Unknown"
 #endif
 
-#endif //WI_SE_SW_WISE_BOARDS_H
+#endif // WI_SE_SW_WISE_BOARDS_H

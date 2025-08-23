@@ -19,4 +19,4 @@
 #define BENCH if (0)
 #endif
 
-#endif //WI_SE_SW_DEBUG_H
+#endif // WI_SE_SW_DEBUG_H

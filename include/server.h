@@ -32,7 +32,7 @@ enum WsCloseReason {
 
 class WiSeServer {
 private:
-    // Use larger data type to be able to mark emptyness
+    // Use larger data type to be able to mark emptyness.
     uint64_t wsFragClientCommandCacheClientIds[WS_MAX_CLIENTS] = {WS_CMD_CACHE_EMPTY_SENTINEL};
     uint8_t wsFragClientCommandCache[WS_MAX_CLIENTS] = {0};
     char serverHeader[100] = {0};
@@ -49,7 +49,7 @@ public:
             httpd{httpd},
             websocket{websocket},
             ttyd{ttyd} {
-        // Format server header
+        // Format server header.
         snprintf(serverHeader, sizeof(serverHeader) / sizeof(char), "%s", "Wi-Se/" VERSION);
     };
 
@@ -143,4 +143,4 @@ private:
     }
 };
 
-#endif //WI_SE_SW_SERVER_H
+#endif // WI_SE_SW_SERVER_H

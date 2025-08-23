@@ -25,7 +25,7 @@ void WiSeServer::begin() {
     DefaultHeaders::Instance().addHeader("Access-Control-Allow-Headers", "Content-Type");
 #endif
 
-    // Handle regular HTTP requests
+    // Handle regular HTTP requests.
     httpd->on("/", HTTP_GET, handleIndex);
     httpd->on("/index.html", HTTP_GET, handleIndex);
     httpd->on("/token", HTTP_GET,
@@ -98,8 +98,7 @@ void WiSeServer::begin() {
         request->send(response);
     });
 
-
-    // Handle CORS preflight
+    // Handle CORS preflight.
     httpd->onNotFound([](AsyncWebServerRequest *request) {
         if (request->method() == HTTP_OPTIONS) {
             request->send(200);
@@ -108,14 +107,13 @@ void WiSeServer::begin() {
         }
     });
 
-    // Handle WebSocket connections
+    // Handle WebSocket connections.
     websocket->onEvent(std::bind(&WiSeServer::onWebSocketEvent, this, std::placeholders::_1, std::placeholders::_2,
                                  std::placeholders::_3, std::placeholders::_4, std::placeholders::_5,
                                  std::placeholders::_6));
     httpd->addHandler(websocket);
     debugf("Web app server is up\r\n");
 }
-
 
 void WiSeServer::end() const {
     websocket->enable(false);
@@ -143,7 +141,6 @@ void WiSeServer::handleIndex(AsyncWebServerRequest *request) {
     request->send(response);
 }
 
-
 void WiSeServer::handleToken(AsyncWebServerRequest *request) const {
     if (!checkHttpBasicAuth(request)) return;
     debugf("GET /token\r\n");
@@ -152,7 +149,6 @@ void WiSeServer::handleToken(AsyncWebServerRequest *request) const {
     strcat(response, "\"}");
     request->send(200, "application/json;charset=utf-8", response);
 }
-
 
 void WiSeServer::sttySendResponse(AsyncWebServerRequest *request) const {
     AsyncResponseStream *response = request->beginResponseStream("application/json");
@@ -214,7 +210,6 @@ void invalidJsonBadRequest(AsyncWebServerRequest *request, const char *message) 
     request->send(response);
 }
 
-
 void WiSeServer::handleStatsRequest(AsyncWebServerRequest *request) const {
     AsyncResponseStream *response = request->beginResponseStream("application/json");
     DynamicJsonDocument doc(200);
@@ -235,8 +230,7 @@ void WiSeServer::handleSttyRequest(AsyncWebServerRequest *request) const {
     }
 }
 
-void
-WiSeServer::handleSttyBody(
+void WiSeServer::handleSttyBody(
         AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) const {
     if (!checkHttpBasicAuth(request)) return;
 
@@ -447,15 +441,15 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
             info = (AwsFrameInfo *) arg;
 
             if (info->final && info->index == 0 && info->len == len) {
-                // Entire message in one frame
+                // Entire message in one frame.
                 debugf("\r\nWS client data FINAL INDEX 0 final %d, len %d\r\n", client->id(), len);
                 ttyd->handleWebSocketMessage(client->id(), data, len);
             } else {
-                // Message is split into multiple frames or frame is fragmented
+                // Message is split into multiple frames or frame is fragmented.
                 debugf("\r\nWS client data FRAGMENTED %d, index %llu len %d\r\n", client->id(), info->index, len);
 
                 if (info->index == 0) {
-                    // Cache command
+                    // Cache command.
                     cachedCommand = 0;
                     storeCommandCache(client->id(), data[0]);
                 } else {

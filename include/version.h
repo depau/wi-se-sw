@@ -11,4 +11,4 @@
 
 #define VERSION "v0.1" LOCAL_VERSION
 
-#endif //WI_SE_SW_VERSION_H
+#endif // WI_SE_SW_VERSION_H
