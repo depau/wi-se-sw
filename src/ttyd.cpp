@@ -121,7 +121,7 @@ void TTY::sendWindowTitle(int64_t clientId) {
 
 void TTY::sendInitialMessages(uint32_t clientId) {
     debugf("TTY send initial message to %d\r\n", clientId);
-    // Using schedule_function seams to fix all esp crash
+    // Using schedule_function seams to fix all esp crashes
     // during intensive browser page refresh.
     schedule_function([this, clientId]() {
         sendWindowTitle(clientId);
@@ -175,7 +175,7 @@ void TTY::blockClient(uint32_t clientId) {
 
 void TTY::removeExpiredClientBlocks() {
     uint64_t now = millis();
-    // Iterate backwards and clear out as many expired items from the end
+    // Iterate backwards and clear out as many expired items from the end.
     for (int i = wsBlockedClientsLen - 1; i >= 0; i--) {
         if (wsClientBlockedAtMillis[i] != 0 && wsClientBlockedAtMillis[i] + WS_CLIENT_BLOCK_EXPIRE_MILLIS < now) {
             debugf("TTY Client unblocked: %d\r\n", wsBlockedClients[i]);
@@ -186,7 +186,7 @@ void TTY::removeExpiredClientBlocks() {
             }
         }
     }
-    // Iterate forward and fill any holes with items from the end
+    // Iterate forward and fill any holes with items from the end.
     for (int i = 0; i < wsBlockedClientsLen; i++) {
         if (wsClientBlockedAtMillis[i] == 0) {
             wsBlockedClients[i] = wsBlockedClients[wsBlockedClientsLen - 1];
@@ -211,7 +211,7 @@ bool TTY::isClientBlocked(uint32_t clientId) {
     return false;
 }
 
-// Returns false if client cannot be handled
+// Returns false if client cannot be handled.
 bool TTY::onNewWebSocketClient(uint32_t clientId) {
     if (wsClientsLen >= WS_MAX_CLIENTS) {
         debugf("TTY too many clients (%d), refusing %d\r\n", wsClientsLen, clientId);
@@ -237,7 +237,7 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
            fragmentCachedCommand, ESP.getFreeHeap());
 
     if (fragmentCachedCommand != 0 && fragmentCachedCommand != CMD_INPUT) {
-        // Do not accept fragmented data unless it's terminal data
+        // Do not accept fragmented data unless it's terminal data.
         return nukeClient(clientId, WS_CLOSE_BAD_CONDITION);
     }
 
@@ -304,11 +304,11 @@ void TTY::handleWebSocketMessage(uint32_t clientId, const uint8_t *buf, size_t l
             break;
         case CMD_JSON_DATA:
         case CMD_RESIZE_TERMINAL:
-            // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021
+            // Resize isn't implemented since... well... people in the 80's didn't predict we'd be resizing terminals in 2021.
             break;
         default:
             debugf("TTY Ignoring client invalid data, len %zu first char %c\r\n", len, buf[0]);
-            //nukeClient(clientId, WS_CLOSE_BAD_DATA);
+            // nukeClient(clientId, WS_CLOSE_BAD_DATA);
     }
 }
 
@@ -465,7 +465,7 @@ bool TTY::areAllClientsAuthenticated() const {
     return pendingAuthClients == 0;
 }
 
-// Trigger flow control (UART side) based on the UART buffer and WebSocket send queue status
+// Trigger flow control (UART side) based on the UART buffer and WebSocket send queue status.
 bool TTY::performFlowControl_SlowWiFi(size_t uartAvailable) {
     bool canSend = wsCanSend();
     if (uartAvailable > UART_SW_FLOW_CONTROL_HIGH_WATERMARK || !canSend) {
@@ -486,12 +486,12 @@ void TTY::unlockUartFlowControlIfTimedOut() {
     }
 }
 
-// Trigger flow control (WebSocket side) if the heap is too full
+// Trigger flow control (WebSocket side) if the heap is too full.
 bool TTY::performFlowControl_HeapFull() {
     if (wsFlowControlStopped) {
-        if (    // We blocked for too long, resume communication for at least one iteration
+        if (    // We blocked for too long, resume communication for at least one iteration.
                 wsFlowControlEngagedMillis + HEAP_CAUSED_WS_FLOW_CTL_STOP_MAX_MS > millis() ||
-                // Heap is now workable
+                // Heap is now workable.
                 ESP.getFreeHeap() >= HEAP_FREE_HIGH_WATERMARK) {
             flowControlWebSocketRequest(false);
         }
@@ -556,9 +556,10 @@ void TTY::autobaud() {
 
 void TTY::dispatchUart() {
     if (wsClientsLen == 0) {
-        // Unlock all flow control
+        // Unlock all flow control.
         flowControlUartRequestResume(FLOW_CTL_SRC_LOCAL | FLOW_CTL_SRC_REMOTE);
-        wsFlowControlStopped = false; // No clients connected, so we just set the flag.
+        // No clients connected, so we just set the flag.
+        wsFlowControlStopped = false;
         return;
     }
 
@@ -571,17 +572,18 @@ void TTY::dispatchUart() {
         unlockUartFlowControlIfTimedOut();
         return;
     }
-    // Rather wait a little bit longer instead of sending a crapload of tiny chunks that take
+
+    // Rather wait a little bit longer instead of sending a crapload of tiny chunks that take.
     if (available < UART_RX_SOFT_MIN) {
         // Wait for roughly the amount of time it takes for an amount of data 2/3 the size of the WS buffer to be
-        // received over UART at the current rate, but not for too long so we don't affect responsiveness
+        // received over UART at the current rate, but not for too long so we don't affect responsiveness.
         delay(UART_BUFFER_BELOW_SOFT_MIN_DYNAMIC_DELAY);
         available = UART_COMM.available();
     }
 
     performFlowControl_SlowWiFi(available);
 
-    // Avoid flow control deadlocks
+    // Avoid flow control deadlocks.
     unlockUartFlowControlIfTimedOut();
 
     bool shouldContinueDispatching = wsCanSend() && !performFlowControl_HeapFull();
@@ -592,7 +594,7 @@ void TTY::dispatchUart() {
     }
 
     // Use the WebSocket library buffer so we can use the "messageAll" fast path that doesn't incur in additional copies
-    // +1 for ttyd command
+    // +1 for ttyd command.
     size_t bufsize = available + 1;
     AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer(bufsize);
     if (!wsBuffer) return;
@@ -600,15 +602,15 @@ void TTY::dispatchUart() {
     if (!buf) return;
     buf[0] = CMD_OUTPUT;
 
-//    uint8_t t1;
-//    BENCH t1 = micros64();
+    // uint8_t t1;
+    // BENCH t1 = micros64();
     BENCH debugf("Sending %d B to %d clients\r\n", bufsize, wsClientsLen);
 
-    // Read directly into the buffer
+    // Read directly into the buffer.
     size_t read = UART_COMM.readBytes(buf + 1, bufsize - 1);
     totalRx += read;
 
-    //BENCH UART_DEBUG.printf("READ %dB time %lld\n", read, micros64() - t1);
+    // BENCH UART_DEBUG.printf("READ %dB time %lld\n", read, micros64() - t1);
 
     if (read == 0) {
         return;
@@ -616,10 +618,10 @@ void TTY::dispatchUart() {
 
     requestLedBlink.leds.rx = true;
 
-//    BENCH t1 = micros64();
+    // BENCH t1 = micros64();
 
     broadcastBufferToClients(wsBuffer);
-    //BENCH UART_DEBUG.printf("WSEND %dB time %lld\n", read, micros64() - t1);
+    // BENCH UART_DEBUG.printf("WSEND %dB time %lld\n", read, micros64() - t1);
 }
 
 #if TARGET_GPIO_COUNT > 0
@@ -643,7 +645,7 @@ void TTY::sendGpioStates(char force) {
             }
         // OUTPUTs
         } else {
-            // Time elapsed - reset gpio state
+            // Time elapsed - reset gpio state.
             if (gpioConfigs[i].state > 1 && now >= gpioConfigs[i].state) {
                 gpioConfigs[i].state = 0;
                 buf[0] = CMD_SERVER_GPIO_STATES;

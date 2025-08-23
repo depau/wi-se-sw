@@ -8,7 +8,7 @@
 #include <AsyncWebSocket.h>
 #include "config.h"
 
-// client message
+// Client messages:
 #define CMD_INPUT '0'
 #define CMD_RESIZE_TERMINAL '1'
 #define CMD_PAUSE '2'
@@ -17,16 +17,16 @@
 #define CMD_DETECT_BAUD 'B'
 #define CMD_SEND_BREAK 'b'
 
-// server message
+// Server messages:
 #define CMD_OUTPUT '0'
-#define CMD_SET_WINDOW_TITLE '1'
-// Defined as a string to be concatenated below
-#define CMD_SET_PREFERENCES "2"
-
 #define CMD_SERVER_PAUSE 'S'
 #define CMD_SERVER_RESUME 'Q'
 #define CMD_SERVER_DETECTED_BAUD 'B'
 #define CMD_SERVER_GPIO_STATES 'G'
+#define CMD_SET_WINDOW_TITLE '1'
+
+// Defined as a string to be concatenated below.
+#define CMD_SET_PREFERENCES "2"
 
 const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 
@@ -35,7 +35,8 @@ const char ttydWebConfig[] = CMD_SET_PREFERENCES TTYD_WEB_CONFIG;
 #define CLIENT_TIMEOUT_CHECK_EVERY_MILLIS 10000
 #define COLLECT_STATS_EVERY_MILLIS 1000
 
-#define CLIENT_TIMEOUT_MILLIS (WS_PING_INTERVAL * 1033)  // WS_PING_INTERVAL * 103.3% == ~310s with a default of 300s
+// WS_PING_INTERVAL * 103.3% == ~310s with a default of 300s
+#define CLIENT_TIMEOUT_MILLIS (WS_PING_INTERVAL * 1033)
 
 #define FLOW_CTL_SRC_LOCAL  0b01
 #define FLOW_CTL_SRC_REMOTE 0b10
@@ -117,7 +118,7 @@ private:
     uint64_t autobaudStartedAtMillis = 0;
     uint64_t autobaudLastAttemptAtMillis = 0;
 
-    // Stats refer to the UART side
+    // Stats refer to the UART side.
     uint64_t lastStatsCollectMillis = millis();
     uint64_t prevTx = 0;
     uint64_t prevRx = 0;
@@ -127,7 +128,7 @@ private:
     uint64_t txRate = 0;
     uint64_t rxRate = 0;
 
-    // GPIOs states and configuration
+    // GPIOs states and configuration.
     GpioConfig gpioConfigs[TARGET_GPIO_COUNT] = {
         TARGET_GPIO_INITS
     };
@@ -174,6 +175,7 @@ public:
     bool isClientAuthenticated(uint32_t clientId);
 
     GpioConfig* getGpioConfigs();
+
 private:
 
     int findClientIndex(uint32_t clientId) {
@@ -241,4 +243,4 @@ private:
     void sendGpioStates(char force);
 };
 
-#endif //WI_SE_SW_TTYD_H
+#endif // WI_SE_SW_TTYD_H

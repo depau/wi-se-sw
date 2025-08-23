@@ -5,7 +5,6 @@
 #ifndef WI_SE_SW_EXTENDEDSERIAL_H
 #define WI_SE_SW_EXTENDEDSERIAL_H
 
-
 #include <HardwareSerial.h>
 
 class ExtendedSerial : public HardwareSerial {
@@ -22,9 +21,7 @@ public:
     void sendBreak();
 };
 
-
 extern ExtendedSerial ExtSerial0;
 extern ExtendedSerial ExtSerial1;
 
-
-#endif //WI_SE_SW_EXTENDEDSERIAL_H
+#endif // WI_SE_SW_EXTENDEDSERIAL_H

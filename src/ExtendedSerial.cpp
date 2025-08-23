@@ -2,12 +2,12 @@
 // Created by depau on 3/13/21.
 //
 
-#include "../include/ExtendedSerial.h"
-
 #include <Arduino.h>
 #include <uart.h>
 #include <esp8266_peri.h>
 #include <user_interface.h>
+
+#include "ExtendedSerial.h"
 
 int ExtendedSerial::autobaudMeasure() {
     static bool doTrigger = true;
@@ -22,7 +22,8 @@ int ExtendedSerial::autobaudMeasure() {
         return 0;
     }
 
-    doTrigger = true;    // Initialize for a next round
+    // Initialize for a next round.
+    doTrigger = true;
     int32_t baudrate = UART_CLK_FREQ / divisor;
 
     return baudrate;
@@ -33,8 +34,8 @@ int ExtendedSerial::autobaudGetClosestStdRate(int32_t rawBaud) {
                                         256000, 460800, 921600, 1500000, 1843200, 3686400};
 
     size_t i;
-    for (i = 1; i < sizeof(default_rates) / sizeof(default_rates[0]) - 1; i++)    // find the nearest real baudrate
-    {
+    // Find the nearest real baudrate.
+    for (i = 1; i < sizeof(default_rates) / sizeof(default_rates[0]) - 1; i++) {
         if (rawBaud <= default_rates[i]) {
             if (rawBaud - default_rates[i - 1] < default_rates[i] - rawBaud) {
                 i--;
@@ -46,17 +47,14 @@ int ExtendedSerial::autobaudGetClosestStdRate(int32_t rawBaud) {
     return default_rates[i];
 }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wint-to-pointer-cast"
 void ExtendedSerial::sendBreak() {
     uart_wait_tx_empty(_uart);
     USC0(_uart_nr) |= BIT(UCBRK);
-    // 10ms should be enough to convince agetty we sent a break without breaking Wi-Fi
+
+    // 10ms should be enough to convince agetty we sent a break without breaking Wi-Fi.
     delayMicroseconds(10 * 1000);
     USC0(_uart_nr) &= ~BIT(UCBRK);
 }
-#pragma clang diagnostic pop
-
 
 ExtendedSerial ExtSerial0(UART0);
 ExtendedSerial ExtSerial1(UART1);
