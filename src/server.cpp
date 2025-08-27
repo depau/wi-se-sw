@@ -2,11 +2,14 @@
 // Created by depau on 1/26/21.
 //
 
-#include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ArduinoJson.h>
-#include <ESP8266WiFi.h>
-
+#ifdef ESP8266
+    #include <ESPAsyncTCP.h>
+#else
+    #include <AsyncTCP.h>
+#endif
+#include "compat.h"
 #include "config.h"
 #include "html.h"
 #include "server.h"
@@ -70,19 +73,16 @@ void WiSeServer::begin() {
         software["version"] = VERSION;
 
         JsonObject soc = doc.createNestedObject("soc");
-#ifdef ESP8266
-        soc["type"] = F("ESP8266");
-#else
-        soc["type"] = F("ESP32");
-#endif
-        soc["chipId"] = ESP.getChipId();
-        soc["sdk"] = ESP.getFullVersion();
+
+        soc["type"] = getChipModel();
+        soc["chipId"] = getChipId();
+        soc["sdk"] = getSdkVersion();
         soc["mhz"] = ESP.getCpuFreqMHz();
 
         JsonObject health = doc.createNestedObject("health");
-        health["vccVoltage"] = ESP.getVcc() / 1000.0;
+        health["vccVoltage"] = getVcc(ADC_INPUT);
         health["heapFree"] = ESP.getFreeHeap();
-        health["heapFrag"] = ESP.getHeapFragmentation();
+        health["heapFrag"] = getHeapFragmentation();
 
         JsonObject net = doc.createNestedObject("net");
         net["wifiMode"] = WIFI_MODE == WIFI_STA ? "sta" : "softap";
@@ -118,7 +118,7 @@ void WiSeServer::begin() {
 void WiSeServer::end() const {
     websocket->enable(false);
     websocket->closeAll();
-    ttyd->shrinkBuffers();
+    ttyd->end();
 }
 
 bool WiSeServer::checkHttpBasicAuth(AsyncWebServerRequest *request) {
@@ -342,7 +342,7 @@ void WiSeServer::handleGpioRequest(AsyncWebServerRequest *request) const {
     for (size_t i = 0; i < TARGET_GPIO_COUNT; ++i) {
         JsonObject obj = doc.add<JsonObject>();
         obj["gpio"] = gpioConfigs[i].gpio;
-        obj["mode"] = gpioConfigs[i].mode;
+        obj["mode"] = (gpioConfigs[i].mode == OUTPUT || gpioConfigs[i].mode == OUTPUT_OPEN_DRAIN) ? 1 : 0;
         obj["dval"] = *gpioConfigs[i].dval;
         obj["state"] = gpioConfigs[i].state;
         obj["name"] = (const __FlashStringHelper*)gpioConfigs[i].name;
@@ -462,5 +462,7 @@ void WiSeServer::onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *
                 }
             }
             break;
+        default:
+            debugf("WS Unsuported event for client %d\r\n", client->id());
     }
 }

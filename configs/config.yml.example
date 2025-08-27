@@ -18,10 +18,17 @@ ignore_unless_requested: false
 board:
   # Board type. Available types:
   # - generic                 for generic boards such as an ESP8266 breakout (you need to configure the LEDs)
+  # - esp32dev                as above, but for ESP32 mcu
   # - wi-se-rpi-v0.1          Wi-Se Raspi Header v0.1
   # - wi-se-opi4-v0,1         Wi-Se Orange Pi 4 v0,1
   # - wi-se-rewirable-v0.1    Wi-Se Rewirable v0,1
   type: generic
+
+  # Optional gpio used by ESP32 to probe his vcc.
+  # ESP8266 use internal adc mode to get his vcc, so don't need it.
+  # This need to be gpio from ADC1 group as ADC2 is not active when Wi-Fi is used.
+  adc_input: 32
+
   # LEDs need to be configured only for generic boards. For Wi-Se boards the LED config is baked-in
   # See project homepage for LED meaning
   leds:
@@ -77,9 +84,13 @@ board:
     #   name: reset
     #   desc: Reset
     #   dval: 1000
+    #   #color: "#f44336"
 
   # CPU frequency in Hz. Overclocking it higher than this won't provide noticeable improvements. Don't fry your ESPs
   #cpu_freq: 160000000
+
+  # Flash size in MB on your board.
+  # flash_size: 4MB
 
 #
 # Upload (flashing) configuration
@@ -238,13 +249,25 @@ debug:
   # Also enable benchmarking debug strings
   # benchmark: false
 
-  # By default release build is used, but when you plan to use `pio debug` or `pio device monitor` then change it to debug!
-  # More info: https://docs.platformio.org/en/latest/projectconf/build_configurations.html
-  #            https://docs.platformio.org/en/latest/core/userguide/cmd_debug.html#cmd-debug
-  build_type: release
-
   # Decoder used by `pio device monitor`
   # By default it's autodetected based on used mcu, but you can overwrite it below.
   # More info: https://docs.platformio.org/en/latest/core/userguide/device/cmd_monitor.html#cmd-device-monitor-filters
   #            https://www.dzombak.com/blog/2021/10/esp8266-platformio-serial-console-monitoring-with-exception-decoding
   # exception_decoder: esp8266_exception_decoder, default
+
+#
+# Build configuration
+#
+build:
+  # By default release build is used, but when you plan to use `pio debug` or `pio device monitor` then change it to debug!
+  # More info: https://docs.platformio.org/en/latest/projectconf/build_configurations.html
+  #            https://docs.platformio.org/en/latest/core/userguide/cmd_debug.html#cmd-debug
+  type: release
+
+  # Linker used in build process.
+  # If not specified, it guesses based on the value of board.flash_size.
+  # ldscript: eagle.flash.4m.ld
+
+  # By default use latest version of ESPAsyncWebServer, but if you decided to use depau old version
+  # with some additionl patches then below flag need to be true.
+  # legacy_lib: false

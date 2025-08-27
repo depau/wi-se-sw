@@ -3,17 +3,18 @@
 //
 
 #include <ArduinoJson.h>
-#include <Schedule.h>
 #include <cstdio>
 #include <debug.h>
 
 #include "config.h"
 #include "server.h"
 #include "ttyd.h"
+#include "xschedule.h"
 #include "ExtendedSerial.h"
 
-void TTY::shrinkBuffers() {
+void TTY::end() {
     UART_COMM.flush();
+    UART_COMM.end();
     UART_COMM.setRxBufferSize(256);
 #if UART_COMM_TX_EN >= 0
     // Disable TX line to prevent debug message on boot.
@@ -324,7 +325,9 @@ void TTY::broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer) {
         // Fast no-copy path
         websocket->binaryAll(wsBuffer);
     } else {
+#ifdef LEGACY_LIB
         wsBuffer->lock();
+#endif
         for (int i = 0; i < wsClientsLen; i++) {
             AsyncWebSocketClient *client = websocket->client(wsClients[i]);
             if (!client) continue;
@@ -332,8 +335,10 @@ void TTY::broadcastBufferToClients(AsyncWebSocketMessageBuffer *wsBuffer) {
                 client->binary(wsBuffer);
             }
         }
+#ifdef LEGACY_LIB
         wsBuffer->unlock();
         websocket->_cleanBuffers();
+#endif
     }
 }
 

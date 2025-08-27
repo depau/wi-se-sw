@@ -166,7 +166,7 @@ public:
 
     void handleWebSocketPong(uint32_t clientId);
 
-    void shrinkBuffers();
+    void end();
 
     void blockClient(uint32_t clientId);
 
