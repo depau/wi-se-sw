@@ -1,9 +1,9 @@
-const { src, dest, task, series } = require("gulp");
-const clean = require('gulp-clean');
-const gzip = require('gulp-gzip');
-const inlineSource = require('gulp-inline-source');
-const rename = require("gulp-rename");
-const through2 = require('through2');
+import { src, dest, task, series } from 'gulp';
+import clean from 'gulp-clean';
+import gzip from 'gulp-gzip';
+import inlineSource from 'gulp-inline-source';
+import rename from 'gulp-rename';
+import through2 from 'through2';
 
 const genHeader = (size, buf, len) => {
     let idx = 0;

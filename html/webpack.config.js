@@ -1,12 +1,15 @@
-const path = require('path');
-const { merge } = require('webpack-merge');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const TerserPlugin = require('terser-webpack-plugin');
+import path from 'path';
+import { merge } from 'webpack-merge';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
+import TerserPlugin from 'terser-webpack-plugin';
+import webpack from 'webpack';
+import ESLintPlugin from 'eslint-webpack-plugin';
 
 const devMode = process.env.NODE_ENV !== 'production';
+const __dirname = path.resolve();
 
 const baseConfig = {
     context: path.resolve(__dirname, 'src'),
@@ -15,42 +18,93 @@ const baseConfig = {
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: devMode ? '[name].js' : '[name].[hash].js',
+        filename: devMode ? '[name].js' : '[name].[fullhash].js',
+        clean: true
     },
     module: {
         rules: [
             {
+                test: /\.m?js$/,
+                include: /node_modules\/@xterm/,
+                use: {
+                    loader: 'babel-loader',
+                    options: {
+                        presets: ['@babel/preset-env'],
+                    },
+                },
+            },
+            /*{
                 test: /\.ts$/,
                 enforce: 'pre',
                 use: 'tslint-loader',
-            },
+            },*/
             {
                 test: /\.tsx?$/,
                 use: 'ts-loader',
                 exclude: /node_modules/
             },
+            // Handling CSS without Sass.
             {
-                test: /\.s?[ac]ss$/,
+                test: /\.css$/,
                 use: [
                     devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
-                    'css-loader',
-                    'sass-loader',
+                    {
+                      loader: 'css-loader',
+                      options: {
+                        sourceMap: devMode,
+                      },
+                    }
+                ],
+            },
+            // Handling SCSS/SASS with API Dart Sass.
+            {
+                test: /\.s[ac]ss$/,
+                use: [
+                    devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
+                    {
+                      loader: 'css-loader',
+                      options: {
+                        sourceMap: devMode,
+                      },
+                    },
+                    {
+                        loader: 'sass-loader',
+                        options: {
+                            implementation: 'sass',
+                            sassOptions: {
+                              quietDeps: true,
+                            },
+                            sourceMap: devMode,
+                        }
+                    }
                 ],
             },
         ]
     },
     resolve: {
-        extensions: [ '.tsx', '.ts', '.js' ]
+        extensions: [ '.tsx', '.ts', '.js' ],
+        fallback: {
+            util: 'util/',
+            process: 'process/browser',
+        }
     },
     plugins: [
+        new ESLintPlugin({
+            extensions: ["ts", "tsx", "js", "jsx"],
+            emitWarning: true,
+            failOnError: false
+        }),
+        new webpack.ProvidePlugin({
+            process: 'process/browser',
+        }),
         new CopyWebpackPlugin({
-            patterns:[
+            patterns: [
                 { from: './favicon.png', to: '.' }
             ],
         }),
         new MiniCssExtractPlugin({
-            filename: devMode ? '[name].css' : '[name].[hash].css',
-            chunkFilename: devMode ? '[id].css' : '[id].[hash].css',
+            filename: devMode ? '[name].css' : '[name].[fullhash].css',
+            chunkFilename: devMode ? '[id].css' : '[id].[fullhash].css',
         }),
         new HtmlWebpackPlugin({
             inject: false,
@@ -62,15 +116,17 @@ const baseConfig = {
             template: './template.html'
         })
     ],
-    performance : {
-        hints : false
+    performance: {
+        hints: false
     },
 };
 
-const devConfig =  {
+const devConfig = {
     mode: 'development',
     devServer: {
-        contentBase: path.join(__dirname, 'dist'),
+        static: {
+            directory: path.join(__dirname, 'dist'),
+        },
         compress: true,
         port: 9000,
         proxy: [{
@@ -85,22 +141,19 @@ const devConfig =  {
 const prodConfig = {
     mode: 'production',
     optimization: {
+        minimize: true,
         minimizer: [
             new TerserPlugin({
-                sourceMap: true
+                terserOptions: {
+                    compress: {
+                        drop_console: true,
+                    },
+                },
             }),
-            new OptimizeCSSAssetsPlugin({
-                cssProcessorOptions: {
-                    map: {
-                        inline: false,
-                        annotation: true
-                    }
-                }
-            }),
-        ]
+            new CssMinimizerPlugin(),
+        ],
     },
     devtool: 'source-map',
 };
 
-
-module.exports = merge(baseConfig, devMode ? devConfig : prodConfig);
+export default merge(baseConfig, devMode ? devConfig : prodConfig);

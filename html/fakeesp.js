@@ -1,7 +1,7 @@
-const express = require("express");
-const cors = require("cors");
-const bodyParser = require("body-parser");
-const { WebSocketServer } = require("ws");
+import express from "express";
+import cors from "cors";
+import bodyParser from "body-parser";
+import { WebSocketServer } from "ws";
 
 const PORT = 7681;
 

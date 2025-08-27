@@ -1,7 +1,7 @@
 import { bind } from 'decko';
 import { h, Component } from 'preact';
 import { saveAs } from 'file-saver';
-import { IDisposable, ITerminalAddon, Terminal } from 'xterm';
+import { IDisposable, ITerminalAddon, Terminal } from '@xterm/xterm';
 import * as Zmodem from 'zmodem.js/src/zmodem_browser';
 
 import { Modal } from '../modal';
@@ -84,7 +84,7 @@ export class ZmodemAddon extends Component<Props, State> implements ITerminalAdd
 
     @bind
     private zmodemReset() {
-        this.terminal.setOption('disableStdin', false);
+        this.terminal.options.disableStdin = false;
 
         if (this.keyDispose) {
             this.keyDispose.dispose();
@@ -127,7 +127,7 @@ export class ZmodemAddon extends Component<Props, State> implements ITerminalAdd
     @bind
     private zmodemDetect(detection: Zmodem.Detection): void {
         const { terminal, receiveFile, zmodemReset } = this;
-        terminal.setOption('disableStdin', true);
+        terminal.options.disableStdin = true;
 
         this.keyDispose = terminal.onKey(e => {
             const event = e.domEvent;
