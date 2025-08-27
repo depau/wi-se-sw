@@ -88,7 +88,7 @@ To build the frontend, and use real esp board you need to follow these steps:
   - Install required packages.
     ```
     cd /html
-    nvm install v15.14.0
+    nvm install v24.6.0
     yarn install
     ```
   - For direct connections change host variable in `html/src/components/app.tsx`
