@@ -34,13 +34,16 @@ BOARD_TYPES = {
     'generic': 0,
     'wi-se-rpi-v0.1': 1,
     'wi-se-opi4-v0.1': 2,
-    'wi-se-rewirable-v0.1': 3
+    'wi-se-rewirable-v0.1': 3,
+    'esp32dev': 4
 }
+
 
 class SafeDict(dict):
     def get(self, key, default=None):
         val = super().get(key, default)
         return default if val is None else val
+
 
 # noinspection PyPep8Naming
 class Extractor:
@@ -85,6 +88,10 @@ class ConfigHeaderExtractor(Extractor):
     @property
     def BOARD_TYPE(self):
         return BOARD_TYPES[self.jq('.board.type', 'generic')]
+
+    @property
+    def ADC_INPUT(self):
+        return self.jq('.board.adc_input', "")
 
     @property
     def UART_COMM(self):
@@ -318,15 +325,26 @@ class PlatformIOExtractor(Extractor):
 
     @property
     def board_mcu(self):
+        if self.board_type == 'esp32dev':
+            return 'esp32'
         return 'esp8266'
 
     @property
+    def board_flash_size(self):
+        fsize = str(self.jq('.board.flash_size', 4))
+        return int(''.join(filter(str.isdigit, fsize)))
+
+    @property
     def platform(self):
+        if self.board_mcu == 'esp32':
+            return 'https://github.com/platformio/platform-espressif32'
         return 'https://github.com/platformio/platform-espressif8266.git'
 
     @property
     def exception_decoder(self):
-        if self.board_mcu == 'esp8266':
+        if self.board_mcu == 'esp32':
+            decoder = 'esp32_exception_decoder, default'
+        elif self.board_mcu == 'esp8266':
             decoder = 'esp8266_exception_decoder, default'
         else:
             decoder = 'direct'
@@ -334,11 +352,30 @@ class PlatformIOExtractor(Extractor):
 
     @property
     def build_type(self):
-        return self.jq('.debug.build_type', 'release')
+        return self.jq('.build.type', 'release')
+
+    @property
+    def build_ldscript(self):
+        # Stupid assumptions:
+        ldscript = "eagle.flash.4m.ld"
+        if self.board_flash_size >= 16:
+            ldscript = "eagle.flash.16m15m.ld"
+        elif self.board_flash_size >= 8:
+            ldscript = "eagle.flash.8m7m.ld"
+        elif self.board_flash_size >= 4:
+            ldscript = "eagle.flash.4m.ld"
+        elif self.board_flash_size >= 2:
+            ldscript = "eagle.flash.2m.ld"
+        return self.jq('.build.ldscript', ldscript)
+
+    @property
+    def build_legacy_lib(self):
+        return self.jq('.build.legacy_lib', False)
 
     @property
     def cpu_freq(self):
-        freq = self.jq('.board.cpu_freq', 160000000) or 160000000
+        default = 240000000 if self.board_mcu == 'esp32' else 160000000
+        freq = self.jq('.board.cpu_freq', default) or default
         return str(freq) + 'L'
 
     @property
@@ -414,18 +451,68 @@ class Builder:
 
         header_out = os.path.join(target_dir, "include", "config.h")
         pio_out = os.path.join(target_dir, "platformio.ini")
+        cwd = os.path.abspath(os.path.dirname(__file__))
 
-        print("Generate include/config.h")
+        print(f"Generate '{header_out.lstrip(cwd)}'")
         with open(header_out, "w") as f:
             header_tpl \
                 .stream(cfg=self.header_extr) \
                 .dump(f)
 
-        print("Generate platformio.ini")
+        print(f"Generate '{pio_out.lstrip(cwd)}'")
         with open(pio_out, "w") as f:
             pio_tpl \
                 .stream(cfg=self.pio_extr) \
                 .dump(f)
+
+        if self.pio_extr.board_mcu == 'esp32':
+            partitions_out = os.path.join(target_dir, "partitions_esp32.csv")
+            self.gen_partitions(self.pio_extr.board_flash_size, partitions_out)
+
+    def gen_partitions(self, flash_size_mb: int, fp: str):
+        ALIGN = 0x10000  # alignment 64 KB
+        def align(val): return (val + ALIGN - 1) & ~(ALIGN - 1)
+
+        flash_size = flash_size_mb * 1024 * 1024
+
+        # NVS minimum 20 KB, standard offset
+        nvs_offset = 0x9000
+        nvs_size   = 0x5000  # 20 KB
+
+        # OTA Data: must be 0x2000 (8 KB)
+        otadata_offset = 0xe000
+        otadata_size   = 0x2000
+
+        # App0:
+        # We leave the alignment at 64 KB.
+        app0_offset = 0x10000
+        remaining = flash_size - app0_offset
+
+        # Divide the rest of the flash into two equal parts.
+        half = remaining // 2
+        app0_size = align(half)
+        app1_offset = app0_offset + app0_size
+        app1_size = align(remaining - app0_size)
+
+        partitions = [
+            ("nvs",      "data", "nvs",      nvs_offset, nvs_size),
+            ("otadata",  "data", "ota",      otadata_offset, otadata_size),
+            ("app0",     "app",  "ota_0",    app0_offset, app0_size),
+            ("app1",     "app",  "ota_1",    app1_offset, app1_size)
+        ]
+
+        lines = ["# Name, Type, SubType, Offset, Size, Flags"]
+        for p in partitions:
+            line = ", ".join(f"0x{x:X}" if isinstance(x, int) else str(x) for x in p)
+            lines.append(line)
+
+        with open(fp, "w") as f:
+            f.write("\n".join(lines) + "\n")
+
+        cwd = os.path.abspath(os.path.dirname(__file__))
+        print(f"Generate '{fp.lstrip(cwd)}' for ESP32 and {flash_size_mb}MB flash size.")
+        print(f"App0: 0x{app0_offset:X} - 0x{app0_offset + app0_size:X} ({app0_size} bytes)")
+        print(f"App1: 0x{app1_offset:X} - 0x{app1_offset + app1_size:X} ({app1_size} bytes)")
 
     def prepare_sources(self):
         os.makedirs(self.builder_dir, 0o755, exist_ok=True)

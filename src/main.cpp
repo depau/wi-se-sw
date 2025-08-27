@@ -1,14 +1,19 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266mDNS.h>
-
+#ifdef ESP8266
+    #include <ESP8266mDNS.h>
+#else
+    #include <ESPmDNS.h>
+#endif
+#include "compat.h"
 #include "config.h"
 #include "server.h"
 #include "debug.h"
 #include "ExtendedSerial.h"
 
-ADC_MODE(ADC_VCC);
+#ifdef ESP8266
+    ADC_MODE(ADC_VCC);
+#endif
 
 char token[HTTP_AUTH_TOKEN_LEN + 1] = {0};
 
@@ -38,7 +43,7 @@ void setup() {
     if (HTTP_AUTH_ENABLE) {
         const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!/?_=;':";
         for (int i = 0; i < HTTP_AUTH_TOKEN_LEN; i++) {
-            token[i] = charset[ESP.random() % (int) (sizeof charset - 1)];
+            token[i] = charset[esp_random() % (int) (sizeof charset - 1)];
         }
     }
 
@@ -75,9 +80,14 @@ void setup() {
     if (WIFI_MODE == WIFI_STA) {
         debugf("Wi-Fi STA connecting\r\n");
 
+#ifdef ESP8266
         WiFi.setOutputPower(17.5);
         WiFi.setPhyMode(WIFI_PHY_MODE_11N);
         WiFi.setSleepMode(WIFI_NONE_SLEEP);
+#else
+        WiFi.setTxPower(WIFI_POWER_17dBm);
+        WiFi.setSleep(false);
+#endif
 
         analogWriteRange(0xFF);
         WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -98,7 +108,7 @@ void setup() {
 
         char wifiSsid[30] = {0};
         if (WIFI_SSID == nullptr) {
-            snprintf(wifiSsid, sizeof(wifiSsid), "Wi-Se_%04X", ESP.getChipId() & 0xFFFF);
+            snprintf(wifiSsid, sizeof(wifiSsid), "Wi-Se_%04X", getChipId() & 0xFFFF);
         } else {
             strncpy(wifiSsid, WIFI_SSID, sizeof(wifiSsid));
         }
@@ -221,7 +231,7 @@ void setup() {
 
             // Blink red LEDs, then reset.
             blinkError();
-            ESP.reset();
+            ESP.restart();
         });
 
         ArduinoOTA.begin();
@@ -240,7 +250,7 @@ void loop() {
 
     if (WIFI_MODE == WIFI_STA && WiFi.status() != WL_CONNECTED) {
         blinkError();
-        ESP.reset();
+        ESP.restart();
     }
 
     ttyd->dispatchUart();

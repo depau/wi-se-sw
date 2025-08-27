@@ -115,7 +115,11 @@ private:
                 debugf("%llu ", clientDataBufClientId);
             }
             debugf("\r\n");
+#ifdef ESP8266
             panic();
+#else
+            esp_system_abort("Critical error, all client command caches full!");
+#endif
         }
 
         return firstEmpty;

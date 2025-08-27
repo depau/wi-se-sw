@@ -4,20 +4,31 @@
 
 #include <Arduino.h>
 #include <uart.h>
-#include <esp8266_peri.h>
-#include <user_interface.h>
-
+#ifdef ESP8266
+    #include <esp8266_peri.h>
+    #include <user_interface.h>
+#else
+    #include "driver/uart.h"
+#endif
 #include "ExtendedSerial.h"
 
 int ExtendedSerial::autobaudMeasure() {
     static bool doTrigger = true;
 
     if (doTrigger) {
+#ifdef ESP8266
         uart_start_detect_baudrate(_uart_nr);
+#else
+        uartStartDetectBaudrate(_uart);
+#endif
         doTrigger = false;
     }
 
+#ifdef ESP8266
     int32_t divisor = uart_baudrate_detect(_uart_nr, 1);
+#else
+    int32_t divisor = uartDetectBaudrate(_uart);
+#endif
     if (!divisor) {
         return 0;
     }
@@ -48,12 +59,17 @@ int ExtendedSerial::autobaudGetClosestStdRate(int32_t rawBaud) {
 }
 
 void ExtendedSerial::sendBreak() {
+#ifdef ESP8266
     uart_wait_tx_empty(_uart);
     USC0(_uart_nr) |= BIT(UCBRK);
 
     // 10ms should be enough to convince agetty we sent a break without breaking Wi-Fi.
     delayMicroseconds(10 * 1000);
     USC0(_uart_nr) &= ~BIT(UCBRK);
+#else
+    uart_wait_tx_done(_uart_nr, pdMS_TO_TICKS(10));
+    uart_send_break(_uart_nr);
+#endif
 }
 
 ExtendedSerial ExtSerial0(UART0);

@@ -39,7 +39,7 @@ export function HeaderBar({ rx, tx, wsConnected, gpioStates, restUrl }: Props) {
         if (!gpioItems.length || !gpioStates.length) return;
         setGpioItems(prev =>
             prev.map((item, index) => {
-                if ((item.mode === 2 || item.mode === 0) && gpioStates[index] !== undefined) {
+                if (item.mode === 0 && gpioStates[index] !== undefined) {
                     return { ...item, state: gpioStates[index] ? 1 : 0 };
                 }
                 return item;
@@ -92,7 +92,7 @@ export function HeaderBar({ rx, tx, wsConnected, gpioStates, restUrl }: Props) {
         ));
 
     const ledIndicators = gpioItems
-        .filter(item => item.mode === 2 || item.mode === 0)
+        .filter(item => item.mode === 0)
         .map((item, index) => (
             <div
                 key={`led-${index}-${item.name}`}

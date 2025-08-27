@@ -14,8 +14,6 @@ It is intended as a firmware for the [Wi-Se](https://github.com/Depau/wi-se-hw/)
 boards (which you can order and build at your favorite PCB manufacturer),  
 though it will work just fine with a normal ESP8266 breakout board.
 
-With some changes it may work with ESP32 but there's no interest for that at the moment. Pull requests are welcome.
-
 Communication occurs over WebSockets: it is compatible with
 [ttyd](https://github.com/tsl0922/ttyd/).  
 In fact, the web UI is the same. CLI clients compatible with ttyd, such as [ttyc](https://github.com/Depau/ttyc) should also work with Wi-Se.
