@@ -1,6 +1,6 @@
 // ported from hterm.Terminal.prototype.showOverlay
 // https://chromium.googlesource.com/apps/libapps/+/master/hterm/js/hterm_terminal.js
-import { ITerminalAddon, Terminal } from 'xterm';
+import { ITerminalAddon, Terminal } from '@xterm/xterm';
 
 export class OverlayAddon implements ITerminalAddon {
     private terminal: Terminal | undefined;

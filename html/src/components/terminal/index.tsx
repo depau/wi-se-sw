@@ -1,15 +1,15 @@
 import { bind } from 'decko';
 import * as backoff from 'backoff';
 import { Component, h } from 'preact';
-import { ITerminalOptions, Terminal } from 'xterm';
-import { FitAddon } from 'xterm-addon-fit';
-import { WebglAddon } from 'xterm-addon-webgl';
-import { WebLinksAddon } from 'xterm-addon-web-links';
+import { ITerminalOptions, Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import { WebglAddon } from '@xterm/addon-webgl';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 
 import { OverlayAddon } from './overlay';
 import { ZmodemAddon, FlowControl } from '../zmodem';
 
-import 'xterm/css/xterm.css';
+import '@xterm/xterm/css/xterm.css';
 
 interface TtydTerminal extends Terminal {
     fit(): void;
@@ -288,7 +288,7 @@ export class Xterm extends Component<Props> {
                     break;
                 default:
                     console.log(`[ttyd] option: ${key}=${value}`);
-                    terminal.setOption(key, value);
+                    (terminal.options as Record<string, any>)[key] = value;
                     if (key.indexOf('font') === 0) fitAddon.fit();
                     break;
             }

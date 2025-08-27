@@ -1,12 +1,17 @@
 import { h, Component } from 'preact';
 
-import { ITerminalOptions, ITheme } from 'xterm';
+import { ITerminalOptions, ITheme } from '@xterm/xterm';
 import { ClientOptions, Xterm } from './terminal';
 import { HeaderBar } from './header/header-bar';
 
-if ((module as any).hot) {
-    // tslint:disable-next-line:no-var-requires
-    require('preact/debug');
+declare const module: {
+    hot?: {
+        accept: () => void;
+    };
+};
+
+if (module.hot) {
+    import('preact/debug');
 }
 
 const host = window.location.host;
