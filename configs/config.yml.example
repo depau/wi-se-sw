@@ -27,7 +27,7 @@ board:
   # Optional gpio used by ESP32 to probe his vcc.
   # ESP8266 use internal adc mode to get his vcc, so don't need it.
   # This need to be gpio from ADC1 group as ADC2 is not active when Wi-Fi is used.
-  adc_input: 32
+  # adc_input: 32
 
   # LEDs need to be configured only for generic boards. For Wi-Se boards the LED config is baked-in
   # See project homepage for LED meaning
@@ -137,7 +137,7 @@ uart:
     # esp8266_tx -------(>|)---*---> RX_TARGET
     #
     # NOTE: GPIO15 is pulled down and cannot be used for this.
-    tx_en: 5
+    # tx_en: 5
 
   # UART used for debugging messages, if enabled
   # It can be set to the same UART used for communication, in which case baud/config are ignored
