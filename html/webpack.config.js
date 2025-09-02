@@ -124,14 +124,36 @@ const baseConfig = {
 const devConfig = {
     mode: 'development',
     devServer: {
+        host: "0.0.0.0",
+        port: 9000,
+        compress: true,
         static: {
             directory: path.join(__dirname, 'dist'),
         },
-        compress: true,
-        port: 9000,
+        webSocketServer: {
+            type: 'ws',
+            options: {
+                // This path must be the same in below client.webSocketURL.pathname,
+                // also it cannot start with any of proxy.context pattern, otherwise
+                // you will see bunch of reconnection in the browser and in shell
+                // loop of [HPM] Upgrading to WebSocket messages.
+                path: '/webpack-ws-server',
+            },
+        },
+        client: {
+            webSocketURL: {
+                // Avoid using localhost whenever possible,
+                // otherwise the browser may take some time to process the first requests.
+                // hostname: 'localhost',
+                pathname: '/webpack-ws-server',
+                port: 9000,
+                protocol: 'ws',
+            },
+        },
         proxy: [{
             context: [ '/token', '/stty', '/gpio', '/stats', '/heap', '/reset', '/whoami', '/ws' ],
             target: 'http://localhost:7681',
+            // changeOrigin: true,
             ws: true
         }]
     },
