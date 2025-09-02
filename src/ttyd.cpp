@@ -12,6 +12,35 @@
 #include "xschedule.h"
 #include "ExtendedSerial.h"
 
+void TTY::begin() {
+#if UART_COMM_TX_EN >= 0
+    // Enable TX line to allow transmission.
+    pinMode(UART_COMM_TX_EN, OUTPUT);
+    digitalWrite(UART_COMM_TX_EN, LOW);
+#endif
+#if TARGET_GPIO_COUNT > 0
+    // Configure target gpios.
+    for (size_t i = 0; i < TARGET_GPIO_COUNT; i++) {
+        debugf("Configure gpio %u from index %u to mode %u.\r\n", gpioConfigs[i].gpio, i, gpioConfigs[i].mode);
+        pinMode(gpioConfigs[i].gpio, gpioConfigs[i].mode);
+
+        // When requested set gpio in init phase.
+        if (gpioConfigs[i].lock == TARGET_GPIO_ONINIT) {
+            gpioConfigs[i].lock = TARGET_GPIO_UNLOCKED;
+            gpioConfigs[i].state = *gpioConfigs[i].dval;
+
+            debugf("Target gpio %u from index %u unlocked during init.\r\n", gpioConfigs[i].gpio, i);
+            for (size_t x = 0; x < TARGET_GPIO_COUNT; x++) {
+                if ((x != i) && (gpioConfigs[x].gpio == gpioConfigs[i].gpio)) {
+                    debugf("Target gpio %u from index %u locked by the same gpio from index %u during init.\r\n", gpioConfigs[x].gpio, x, i);
+                    gpioConfigs[x].lock = TARGET_GPIO_LOCKED;
+                }
+            }
+        }
+    }
+#endif
+}
+
 void TTY::end() {
     UART_COMM.flush();
     UART_COMM.end();
@@ -41,12 +70,6 @@ void TTY::stty(uint32_t baudrate, uint8_t config) {
     if (wsClientsLen > 0) {
         sendWindowTitle();
     }
-
-#if UART_COMM_TX_EN >= 0
-    // Enable TX line to allow transmission.
-    pinMode(UART_COMM_TX_EN, OUTPUT);
-    digitalWrite(UART_COMM_TX_EN, LOW);
-#endif
 }
 
 void TTY::markClientAuthenticated(uint32_t clientId) {
@@ -640,27 +663,41 @@ void TTY::sendGpioStates(char force) {
     buf[0] = force;
 
     for (size_t i = 0; i < TARGET_GPIO_COUNT; i++) {
-        pinMode(gpioConfigs[i].gpio, gpioConfigs[i].mode);
         // INPUTs
-        if (gpioConfigs[i].mode != OUTPUT) {
-            bool v = digitalRead(gpioConfigs[i].gpio) ^ gpioConfigs[i].inverted;
-            if (gpioConfigs[i].state != v) {
-                gpioConfigs[i].state = v;
+        if ((gpioConfigs[i].mode != OUTPUT) && (gpioConfigs[i].mode != OUTPUT_OPEN_DRAIN)) {
+            bool value = digitalRead(gpioConfigs[i].gpio) ^ gpioConfigs[i].inverted;
+            if (gpioConfigs[i].state != value) {
+                gpioConfigs[i].state = value;
                 buf[0] = CMD_SERVER_GPIO_STATES;
             }
         // OUTPUTs
         } else {
-            // Time elapsed - reset gpio state.
-            if (gpioConfigs[i].state > 1 && now >= gpioConfigs[i].state) {
-                gpioConfigs[i].state = 0;
-                buf[0] = CMD_SERVER_GPIO_STATES;
+            // When the state is set above 1.
+            if (gpioConfigs[i].state > 1) {
+                // Add the time after which the port will be reset.
+                if (gpioConfigs[i].lock == TARGET_GPIO_UNLOCKED) {
+                    debugf("[%llu] Add timestamp for gpio %u from index %u, state %llu, new state %llu.\r\n", now, gpioConfigs[i].gpio, i, gpioConfigs[i].state, gpioConfigs[i].state + now);
+                    gpioConfigs[i].state += now;
+                // Check if time elapsed and reset gpio state.
+                } else if (now >= gpioConfigs[i].state) {
+                    debugf("[%llu] Time elapsed for gpio %u from index %u, state %llu, lock %u.\r\n", now, gpioConfigs[i].gpio, i, gpioConfigs[i].state, gpioConfigs[i].lock);
+                    gpioConfigs[i].state = 0;
+                    buf[0] = CMD_SERVER_GPIO_STATES;
+                }
             }
-            digitalWrite(gpioConfigs[i].gpio, (!!gpioConfigs[i].state) ^ gpioConfigs[i].inverted);
+
+            // Use internal lock to set gpio only on change or request.
+            bool value = (!!gpioConfigs[i].state) ^ gpioConfigs[i].inverted;
+            if ((gpioConfigs[i].lock != TARGET_GPIO_LOCKED) && (gpioConfigs[i].lock != value)) {
+                gpioConfigs[i].lock = value;
+                debugf("[%llu] Writting gpio %u from index %u to value %u.\r\n", now, gpioConfigs[i].gpio, i, value);
+                digitalWrite(gpioConfigs[i].gpio, value);
+            }
         }
         buf[i + 1] = gpioConfigs[i].state ? '1' : '0';
     }
     // Emit changes
-    if (buf[0] == CMD_SERVER_GPIO_STATES && wsCanSend()) {
+    if ((buf[0] == CMD_SERVER_GPIO_STATES) && wsCanSend()) {
         if (AsyncWebSocketMessageBuffer *wsBuffer = websocket->makeBuffer((uint8_t *) buf, TARGET_GPIO_COUNT + 1))
             broadcastBufferToClients(wsBuffer);
     }

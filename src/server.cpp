@@ -375,19 +375,24 @@ void WiSeServer::handleGpioBody(
 
     for (size_t i = 0; i < TARGET_GPIO_COUNT; i++) {
         // OUTPUTs
-        if (gpioConfigs[i].mode == OUTPUT) {
+        if ((gpioConfigs[i].mode == OUTPUT) || (gpioConfigs[i].mode == OUTPUT_OPEN_DRAIN)) {
             if (doc.containsKey((const __FlashStringHelper*)gpioConfigs[i].name)) {
                 if (!doc[(const __FlashStringHelper*)gpioConfigs[i].name].is<unsigned int>()) {
                     char buffer[50];
-                    snprintf(buffer, 50, "Value for gpio (%d) must be a positive number!", gpioConfigs[i].gpio);
+                    snprintf(buffer, 50, "Value for gpio (%u) must be a positive number!", gpioConfigs[i].gpio);
                     return invalidJsonBadRequest(request, buffer);
                 }
+                debugf("Target gpio %u from index %u unlocked.\r\n", gpioConfigs[i].gpio, i);
+                gpioConfigs[i].lock = TARGET_GPIO_UNLOCKED;
                 gpioConfigs[i].state = doc[(const __FlashStringHelper*)gpioConfigs[i].name];
-                // When the value is set above 1,
-                // set the time after which the port will be reset
-                if (gpioConfigs[i].state > 1){
-                    gpioConfigs[i].state += millis();
+                // Discard any other gpio with the same number that may be in pending state.
+                for (size_t x = 0; x < TARGET_GPIO_COUNT; x++) {
+                    if ((x != i) && (gpioConfigs[x].gpio == gpioConfigs[i].gpio)) {
+                        debugf("Target gpio %u from index %u locked by the same gpio from index %u.\r\n", gpioConfigs[x].gpio, x, i);
+                        gpioConfigs[x].lock = TARGET_GPIO_LOCKED;
+                    }
                 }
+
             }
         }
     }

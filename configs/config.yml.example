@@ -45,9 +45,15 @@ board:
   # Processing and the controls in the web UI will be rendered based on it.
   # The name field should be unique and used in REST queries.
   # The dval is a default value send by frontend to outputs.
+  # The init flag can be used to schedule initial action based on dval after boot.
   # The inverted field can be used to invert the gpio state during write or read operations.
   # The color field accepts values literally, e.g. red, or as a hex value eg. "#FF0000".
   # Remember to enclose the hex values in quotation marks, if begins with # sign.
+  #
+  # If you use the same gpio multiple times to avoid misconfiguration use the same mode
+  # in each entry, otherwise the last one be used.
+  # In the case of the init field, the first one be used at boot time.
+  #
   target:
     # # Input used to inform esp board that target device is powered, eg. 3v3 rail of ATX power supply.
     # - gpio: 13
@@ -68,6 +74,7 @@ board:
     #   name: ps_on
     #   desc: Power on
     #   dval: 1000
+    #   init: true
     #   color: "#04AA6D"
     #   inverted: true
     # # Output used to control power on target device, eg. moterboard ps_on button - long press.

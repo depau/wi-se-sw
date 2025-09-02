@@ -98,6 +98,9 @@
 #define TARGET_GPIO_COUNT {{ cfg.TARGET_GPIO_COUNT }}
 #define TARGET_GPIO_INITS {{ cfg.TARGET_GPIO_INITS }}
 #define TARGET_GPIO_STRINGS {{ cfg.TARGET_GPIO_STRINGS }}
+#define TARGET_GPIO_ONINIT 2
+#define TARGET_GPIO_LOCKED 3
+#define TARGET_GPIO_UNLOCKED 4
 
 // Advanced buffering parameters:
 // Tweak if you feel brave. Report any improvements, but make sure you test them at 1500000 8N1 and that it works better

@@ -70,6 +70,7 @@ union led_blink_schedule_u {
 struct GpioConfig {
     uint8_t gpio;
     uint8_t mode;
+    uint8_t lock;
     bool inverted;
     uint64_t state;
     const uint64_t* dval;
@@ -152,6 +153,10 @@ public:
 
     uint64_t getTxRate() const { return txRate; }
 
+    void begin();
+
+    void end();
+
     void stty(uint32_t baudrate, uint8_t config);
 
     bool onNewWebSocketClient(uint32_t clientId);
@@ -165,8 +170,6 @@ public:
     void performHousekeeping();
 
     void handleWebSocketPong(uint32_t clientId);
-
-    void end();
 
     void blockClient(uint32_t clientId);
 

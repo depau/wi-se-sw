@@ -237,7 +237,11 @@ class ConfigHeaderExtractor(Extractor):
         l = []
         for i,v in enumerate(jq):
             v = SafeDict(v)
-            l.append("{%s, %s, %s, 0, &gpio_%s_dval, gpio_%s_name, gpio_%s_desc, gpio_%s_color}" % (v['gpio'], v.get('mode','INPUT'), str(v.get('inverted','false')).lower(), i, i, i, i))
+            gpio = v['gpio']
+            mode = v.get('mode','INPUT')
+            init = 'TARGET_GPIO_ONINIT' if v.get('init', False) else 'TARGET_GPIO_LOCKED'
+            inverted = str(v.get('inverted','false')).lower()
+            l.append("{%s, %s, %s, %s, 0, &gpio_%s_dval, gpio_%s_name, gpio_%s_desc, gpio_%s_color}" % (gpio, mode, init, inverted, i, i, i, i))
         return '\\\n%s\n' % ', \\\n'.join(l) if l else ''
 
     @property
