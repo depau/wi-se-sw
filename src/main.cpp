@@ -54,6 +54,7 @@ void setup() {
 
     // Init UART.
     ttyd->stty(UART_COMM_BAUD, UART_COMM_CONFIG);
+    ttyd->begin();
 
 #if ENABLE_DEBUG == 1
     if (UART_COMM != UART_DEBUG) {
