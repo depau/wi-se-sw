@@ -61,14 +61,14 @@ board:
     #   name: power
     #   desc: Power
     #   color: "#FFA500"
-    # # Input status on target device, eg. moterboard power led.
+    # # Input status on target device, eg. motherboard power led.
     # - gpio: 14
     #   mode: INPUT_PULLUP
     #   name: status
     #   desc: Status LED
     #   color: "#FAFAD2"
     #   inverted: true
-    # # Output used to control power on target device, eg. moterboard ps_on button - short press.
+    # # Output used to control power on target device, eg. motherboard ps_on button - short press.
     # - gpio: 4
     #   mode: OUTPUT
     #   name: ps_on
@@ -77,7 +77,7 @@ board:
     #   init: true
     #   color: "#04AA6D"
     #   inverted: true
-    # # Output used to control power on target device, eg. moterboard ps_on button - long press.
+    # # Output used to control power on target device, eg. motherboard ps_on button - long press.
     # - gpio: 4
     #   mode: OUTPUT
     #   name: ps_off
@@ -85,7 +85,7 @@ board:
     #   dval: 10000
     #   color: red
     #   inverted: true
-    # # Output to reset target board, eg, moterboard reset button.
+    # # Output to reset target board, eg, motherboard reset button.
     # - gpio: 12
     #   mode: OUTPUT
     #   name: reset

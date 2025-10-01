@@ -35,6 +35,11 @@ static inline const char* getChipModel() {
     return "ESP8266";
 }
 
+static inline void wisePanic(const char* msg) {
+    (void)msg;
+    panic();
+}
+
 #else // ESP32
 
 #include <WiFi.h>
@@ -85,6 +90,10 @@ static inline const char* getChipModel() {
             snprintf(buf, sizeof(buf), "ESP32-M%d", chip_info.model);
             return buf;
     }
+}
+
+static inline void wisePanic(const char* msg) {
+    esp_system_abort(msg);
 }
 
 #endif
