@@ -6,13 +6,13 @@
 
 ---
 
-This software allows you to use the ESP8266 board as a remote UART terminal with GPIO port control and reading.
+This software allows you to use an ESP8266 or ESP32 board as a remote UART terminal with GPIO port control and reading.
 
 It is very fast, reaching (with [caveats](#caveats)) up to 1500000bps rates.
 
 It is intended as a firmware for the [Wi-Se](https://github.com/Depau/wi-se-hw/)
 boards (which you can order and build at your favorite PCB manufacturer),  
-though it will work just fine with a normal ESP8266 breakout board.
+though it will work just fine with a normal ESP8266 or ESP32 breakout board.
 
 Communication occurs over WebSockets: it is compatible with
 [ttyd](https://github.com/tsl0922/ttyd/).  
@@ -289,7 +289,7 @@ You might have pressed `Ctrl`+`S` and triggered flow control by mistake. If you'
 
 If you're using the web client, this can close the browser, depending on which one you use.
 
-Chrome browser seams to ignore `Ctrl`+`Q` and pass it like it is, at least Linux version.
+Chrome browser seems to ignore `Ctrl`+`Q` and pass it like it is, at least Linux version.
 
 Firefox will ask you to close the page, but you can disable this shortcut.  
 Read more about how to do it on [how-to-disable-ctrlq-shortcut-in-firefox](https://superuser.com/questions/1318336/how-to-disable-ctrlq-shortcut-in-firefox-on-linux) thread.

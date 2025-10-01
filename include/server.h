@@ -7,6 +7,7 @@
 
 #include "ttyd.h"
 #include "debug.h"
+#include "compat.h"
 #include "version.h"
 #include "ExtendedSerial.h"
 
@@ -115,11 +116,7 @@ private:
                 debugf("%llu ", clientDataBufClientId);
             }
             debugf("\r\n");
-#ifdef ESP8266
-            panic();
-#else
-            esp_system_abort("Critical error, all client command caches full!");
-#endif
+            wisePanic("Critical error, all client command caches full!");
         }
 
         return firstEmpty;

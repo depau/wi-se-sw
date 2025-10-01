@@ -235,25 +235,33 @@ class ConfigHeaderExtractor(Extractor):
     def TARGET_GPIO_INITS(self):
         jq = self.jq('.board.target', [])
         l = []
-        for i,v in enumerate(jq):
+        for i, v in enumerate(jq):
             v = SafeDict(v)
             gpio = v['gpio']
-            mode = v.get('mode','INPUT')
+            mode = v.get('mode', 'INPUT')
             init = 'TARGET_GPIO_ONINIT' if v.get('init', False) else 'TARGET_GPIO_LOCKED'
             inverted = str(v.get('inverted','false')).lower()
-            l.append("{%s, %s, %s, %s, 0, &gpio_%s_dval, gpio_%s_name, gpio_%s_desc, gpio_%s_color}" % (gpio, mode, init, inverted, i, i, i, i))
+            l.append(
+                f"{{{gpio}, {mode}, {init}, {inverted}, 0, "
+                f"&gpio_{i}_dval, gpio_{i}_name, gpio_{i}_desc, gpio_{i}_color}}"
+            )
         return '\\\n%s\n' % ', \\\n'.join(l) if l else ''
 
     @property
     def TARGET_GPIO_STRINGS(self):
         jq = self.jq('.board.target', [])
         l = []
-        for i,v in enumerate(jq):
+        for i, v in enumerate(jq):
             v = SafeDict(v)
-            l.append("const uint64_t gpio_%s_dval PROGMEM = %d;" % (i, v.get('dval', 0)))
-            l.append("const char gpio_%s_name[] PROGMEM = \"%s\";" % (i, v.get('name', "gpio%s" % v['gpio'])))
-            l.append("const char gpio_%s_desc[] PROGMEM = \"%s\";" % (i, v.get('desc', "GPIO %s" % v['gpio'])))
-            l.append("const char gpio_%s_color[] PROGMEM = \"%s\";" % (i, v.get('color', "#333" if v.get('mode','') == 'OUTPUT' else "limegreen")))
+            gpio = v['gpio']
+            dval = v.get('dval', 0)
+            name = v.get('name', f"gpio{gpio}")
+            desc = v.get('desc', f"GPIO {gpio}")
+            color = v.get('color', "#333" if v.get('mode', '') == 'OUTPUT' else "limegreen")
+            l.append(f"const uint64_t gpio_{i}_dval PROGMEM = {dval};")
+            l.append(f"const char gpio_{i}_name[] PROGMEM = \"{name}\";")
+            l.append(f"const char gpio_{i}_desc[] PROGMEM = \"{desc}\";")
+            l.append(f"const char gpio_{i}_color[] PROGMEM = \"{color}\";")
         return '\\\n%s' % ' \\\n'.join(l) if l else ''
 
     @property
